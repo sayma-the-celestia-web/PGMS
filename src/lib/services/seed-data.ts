@@ -1,312 +1,54 @@
-import { Semester, Course, CourseOffering, Team, TeamMembership, Student, RegistrationCredential } from "@/types";
-import { hashToken } from "../utils/crypto";
+import {
+  Semester,
+  Course,
+  CourseOffering,
+  Team,
+  TeamMembership,
+  Student,
+  RegistrationCredential,
+} from "@/types";
 
-export const initialSemesters: Semester[] = [
-  {
-    id: "sem-spring-2026",
-    name: "Spring 2026",
-    academic_year: "2025-2026",
-    start_date: "2026-01-10",
-    end_date: "2026-05-30",
-    is_active: true,
-    created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 60 * 86400000).toISOString(),
-  },
-  {
-    id: "sem-fall-2026",
-    name: "Fall 2026",
-    academic_year: "2026-2027",
-    start_date: "2026-07-01",
-    end_date: "2026-11-30",
-    is_active: true,
-    created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 20 * 86400000).toISOString(),
-  },
-];
+// ─── Department Configuration ──────────────────────────────────────────────
+// Daffodil International University — Department of Software Engineering
+// Initial academic configuration: Batch 45, Section H, Course SE214
+// Registration must be opened explicitly by the Superadmin.
+// ───────────────────────────────────────────────────────────────────────────
 
+export const DEPARTMENT_CONFIG = {
+  batch: "45",
+  section: "H",
+  courseCode: "SE214",
+  courseName: "Algorithm Design and Analysis",
+  department: "Software Engineering",
+  university: "Daffodil International University",
+} as const;
+
+// No pre-configured semesters — Superadmin must create a semester first.
+export const initialSemesters: Semester[] = [];
+
+// One real course: SE214 — Algorithm Design and Analysis
 export const initialCourses: Course[] = [
   {
-    id: "crs-swe411",
-    code: "SWE 411",
-    name: "Software Architecture and Design",
-    description: "Design patterns, architectural styles, quality attributes, and presentation of enterprise architecture solutions.",
-    slug: "swe-411",
-    created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 60 * 86400000).toISOString(),
-  },
-  {
-    id: "crs-swe323",
-    code: "SWE 323",
-    name: "Web Engineering",
-    description: "Modern full-stack web applications, RESTful services, frontend architecture, and group capstone presentations.",
-    slug: "swe-323",
-    created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 60 * 86400000).toISOString(),
-  },
-  {
-    id: "crs-swe232",
-    code: "SWE 232",
-    name: "Software Testing & Quality Assurance",
-    description: "Unit testing, integration testing, CI/CD pipelines, and practical group demonstration of automated test suites.",
-    slug: "swe-232",
-    created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 60 * 86400000).toISOString(),
-  },
-  {
-    id: "crs-swe132",
-    code: "SWE 132",
-    name: "Object Oriented Concepts",
-    description: "Core OOP principles, polymorphism, encapsulation, inheritance, and introductory team development projects.",
-    slug: "swe-132",
-    created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 60 * 86400000).toISOString(),
+    id: "crs-se214",
+    code: "SE214",
+    name: "Algorithm Design and Analysis",
+    description:
+      "Algorithm analysis, design paradigms, complexity theory, and practical algorithm implementation for Software Engineering students.",
+    slug: "se214",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   },
 ];
 
-export const initialOfferings: CourseOffering[] = [
-  {
-    id: "off-swe411-61a",
-    course_id: "crs-swe411",
-    semester_id: "sem-fall-2026",
-    section: "61_A",
-    registration_status: "OPEN",
-    registration_start: new Date(Date.now() - 7 * 86400000).toISOString(),
-    registration_deadline: new Date(Date.now() + 14 * 86400000).toISOString(),
-    min_team_capacity: 3,
-    max_team_capacity: 5,
-    created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-  },
-  {
-    id: "off-swe411-61b",
-    course_id: "crs-swe411",
-    semester_id: "sem-fall-2026",
-    section: "61_B",
-    registration_status: "OPEN",
-    registration_start: new Date(Date.now() - 5 * 86400000).toISOString(),
-    registration_deadline: new Date(Date.now() + 10 * 86400000).toISOString(),
-    min_team_capacity: 3,
-    max_team_capacity: 5,
-    created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-  },
-  {
-    id: "off-swe323-62a",
-    course_id: "crs-swe323",
-    semester_id: "sem-fall-2026",
-    section: "62_A",
-    registration_status: "OPEN",
-    registration_start: new Date(Date.now() - 4 * 86400000).toISOString(),
-    registration_deadline: new Date(Date.now() + 8 * 86400000).toISOString(),
-    min_team_capacity: 2,
-    max_team_capacity: 4,
-    created_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-  },
-  {
-    id: "off-swe232-63a",
-    course_id: "crs-swe232",
-    semester_id: "sem-fall-2026",
-    section: "63_A",
-    registration_status: "PAUSED",
-    registration_start: new Date(Date.now() - 10 * 86400000).toISOString(),
-    registration_deadline: new Date(Date.now() + 2 * 86400000).toISOString(),
-    min_team_capacity: 3,
-    max_team_capacity: 4,
-    created_at: new Date(Date.now() - 10 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 10 * 86400000).toISOString(),
-  },
-];
+// No pre-configured offering — requires a semester to be created by the Superadmin first.
+// Superadmin must configure: semester, registration dates, team capacity, then open registration.
+export const initialOfferings: CourseOffering[] = [];
 
-export const initialStudents: Student[] = [
-  {
-    id: "stu-1",
-    full_name: "Tanvir Ahmed",
-    student_id: "221-35-101",
-    normalized_student_id: "221-35-101",
-    created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-  },
-  {
-    id: "stu-2",
-    full_name: "Fatima Tuz Zohra",
-    student_id: "221-35-102",
-    normalized_student_id: "221-35-102",
-    created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-  },
-  {
-    id: "stu-3",
-    full_name: "Mahmudul Hasan",
-    student_id: "221-35-103",
-    normalized_student_id: "221-35-103",
-    created_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-  },
-  {
-    id: "stu-4",
-    full_name: "Nusrat Jahan",
-    student_id: "221-35-201",
-    normalized_student_id: "221-35-201",
-    created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-  },
-  {
-    id: "stu-5",
-    full_name: "Arifur Rahman",
-    student_id: "221-35-202",
-    normalized_student_id: "221-35-202",
-    created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-  },
-  {
-    id: "stu-6",
-    full_name: "Sadia Sultana",
-    student_id: "221-35-203",
-    normalized_student_id: "221-35-203",
-    created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-  },
-  {
-    id: "stu-7",
-    full_name: "Kazi Ashikur",
-    student_id: "221-35-204",
-    normalized_student_id: "221-35-204",
-    created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-  },
-];
+// No demo students, teams, memberships or credentials.
+export const initialStudents: Student[] = [];
 
-export const initialTeams: Team[] = [
-  {
-    id: "team-arch-ninjas",
-    course_offering_id: "off-swe411-61a",
-    team_name: "Architecture Ninjas",
-    capacity: 4,
-    leader_membership_id: "mem-1",
-    status: "OPEN",
-    created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-  },
-  {
-    id: "team-pattern-masters",
-    course_offering_id: "off-swe411-61a",
-    team_name: "Pattern Masters",
-    capacity: 4,
-    leader_membership_id: "mem-4",
-    status: "FULL",
-    created_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-  },
-  {
-    id: "team-cloud-sync",
-    course_offering_id: "off-swe323-62a",
-    team_name: "Cloud Sync",
-    capacity: 3,
-    leader_membership_id: "mem-8",
-    status: "OPEN",
-    created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-  },
-];
+export const initialTeams: Team[] = [];
 
-export const initialMemberships: TeamMembership[] = [
-  {
-    id: "mem-1",
-    team_id: "team-arch-ninjas",
-    student_id: "stu-1",
-    course_offering_id: "off-swe411-61a",
-    role: "LEADER",
-    status: "ACTIVE",
-    joined_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-  },
-  {
-    id: "mem-2",
-    team_id: "team-arch-ninjas",
-    student_id: "stu-2",
-    course_offering_id: "off-swe411-61a",
-    role: "MEMBER",
-    status: "ACTIVE",
-    joined_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-  },
-  {
-    id: "mem-3",
-    team_id: "team-arch-ninjas",
-    student_id: "stu-3",
-    course_offering_id: "off-swe411-61a",
-    role: "MEMBER",
-    status: "ACTIVE",
-    joined_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 4 * 86400000).toISOString(),
-  },
-  {
-    id: "mem-4",
-    team_id: "team-pattern-masters",
-    student_id: "stu-4",
-    course_offering_id: "off-swe411-61a",
-    role: "LEADER",
-    status: "ACTIVE",
-    joined_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-  },
-  {
-    id: "mem-5",
-    team_id: "team-pattern-masters",
-    student_id: "stu-5",
-    course_offering_id: "off-swe411-61a",
-    role: "MEMBER",
-    status: "ACTIVE",
-    joined_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 3 * 86400000).toISOString(),
-  },
-  {
-    id: "mem-6",
-    team_id: "team-pattern-masters",
-    student_id: "stu-6",
-    course_offering_id: "off-swe411-61a",
-    role: "MEMBER",
-    status: "ACTIVE",
-    joined_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-  },
-  {
-    id: "mem-7",
-    team_id: "team-pattern-masters",
-    student_id: "stu-7",
-    course_offering_id: "off-swe411-61a",
-    role: "MEMBER",
-    status: "ACTIVE",
-    joined_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
-  },
-];
+export const initialMemberships: TeamMembership[] = [];
 
-// Initial demo credentials:
-// Team Management token for Architecture Ninjas: pgms_tm_demo1234567890abcdef123456
-// Member token for Tanvir Ahmed: pgms_mem_demo1234567890abcdef123456
-export const initialCredentials: RegistrationCredential[] = [
-  {
-    id: "cred-1",
-    credential_type: "TEAM_MANAGEMENT",
-    team_id: "team-arch-ninjas",
-    membership_id: null,
-    token_hash: hashToken("pgms_tm_demo1234567890abcdef123456"),
-    created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-    expires_at: null,
-    revoked_at: null,
-    last_used_at: null,
-  },
-  {
-    id: "cred-2",
-    credential_type: "MEMBERSHIP",
-    team_id: null,
-    membership_id: "mem-1",
-    token_hash: hashToken("pgms_mem_demo1234567890abcdef123456"),
-    created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
-    expires_at: null,
-    revoked_at: null,
-    last_used_at: null,
-  },
-];
+export const initialCredentials: RegistrationCredential[] = [];

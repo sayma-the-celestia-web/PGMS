@@ -23,7 +23,6 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const offerings = await DataService.getCourseOfferings();
-  const activeOfferings = offerings.filter((o) => o.registration_status === "OPEN");
   const stats = await DataService.getDashboardStats();
 
   return (
@@ -190,7 +189,7 @@ export default async function HomePage() {
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-xs font-semibold text-diu-blue uppercase tracking-wider mb-2">
                 <BookOpen className="w-3.5 h-3.5" />
-                Open For Registration
+                Course Registrations
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-diu-navy font-heading">
                 Current Course Offerings
@@ -209,7 +208,17 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {offerings.slice(0, 6).map((offering) => (
+            {offerings.length === 0 ? (
+              <div className="col-span-full text-center py-16 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
+                <Clock className="w-12 h-12 text-slate-300 mx-auto" />
+                <h3 className="text-lg font-semibold text-diu-navy">Registration Coming Soon</h3>
+                <p className="text-sm text-diu-slate max-w-sm mx-auto">
+                  Course registration for <strong>SE214 — Algorithm Design and Analysis</strong> (Batch 45, Section H)
+                  is being configured. Check back once the Superadmin opens registration.
+                </p>
+              </div>
+            ) : (
+              offerings.slice(0, 6).map((offering) => (
               <Card
                 key={offering.id}
                 className="flex flex-col h-full hover:border-diu-blue/50 hover:shadow-md transition-all group"
@@ -288,7 +297,8 @@ export default async function HomePage() {
                   </Link>
                 </CardFooter>
               </Card>
-            ))}
+            ))
+            )}
           </div>
         </div>
       </section>
@@ -318,7 +328,7 @@ export default async function HomePage() {
                 Choose Your Course
               </h3>
               <p className="text-xs text-diu-slate leading-relaxed">
-                Browse current offerings by course code (e.g. SWE 411) and select your enrolled section.
+                Browse current offerings by course code (e.g. SE214) and select your enrolled section.
               </p>
             </div>
 
@@ -431,23 +441,23 @@ export default async function HomePage() {
                   <span className="font-heading font-bold text-lg">DIU SWE Portal</span>
                 </div>
                 <span className="text-xs px-2.5 py-1 bg-white/20 rounded-full font-medium">
-                  Fall 2026
+                  Batch 45
                 </span>
               </div>
 
               <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/15 space-y-2">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="text-blue-100 font-semibold">SWE 411 • Section 61_A</span>
-                  <span className="bg-emerald-500/30 text-emerald-300 px-2 py-0.5 rounded text-[10px] font-bold">
-                    3 SLOTS LEFT
+                  <span className="text-blue-100 font-semibold">SE214 • Section H</span>
+                  <span className="bg-amber-500/30 text-amber-300 px-2 py-0.5 rounded text-[10px] font-bold">
+                    UPCOMING
                   </span>
                 </div>
                 <h4 className="font-heading font-bold text-base text-white">
-                  Architecture Ninjas
+                  Algorithm Design and Analysis
                 </h4>
-                <p className="text-xs text-blue-100/80">Leader: Tanvir Ahmed</p>
+                <p className="text-xs text-blue-100/80">Registration opens when configured by admin</p>
                 <div className="w-full bg-white/20 rounded-full h-1.5 mt-2">
-                  <div className="bg-emerald-400 h-1.5 rounded-full w-3/4" />
+                  <div className="bg-emerald-400 h-1.5 rounded-full w-0" />
                 </div>
               </div>
 

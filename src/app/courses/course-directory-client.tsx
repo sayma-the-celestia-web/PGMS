@@ -67,7 +67,7 @@ export function CourseDirectoryClient({ initialOfferings, semesters }: Props) {
             <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
             <Input
               type="text"
-              placeholder="Search by code or title (e.g. SWE 411)..."
+              placeholder="Search by code or title (e.g. SE214)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 text-sm"
@@ -151,9 +151,15 @@ export function CourseDirectoryClient({ initialOfferings, semesters }: Props) {
       {filteredOfferings.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xl border border-slate-200/80 p-8 space-y-3">
           <Layers className="w-12 h-12 text-slate-300 mx-auto" />
-          <h3 className="text-lg font-semibold text-diu-navy">No course offerings match your search</h3>
+          <h3 className="text-lg font-semibold text-diu-navy">
+            {initialOfferings.length === 0
+              ? "Registration Configuration in Progress"
+              : "No course offerings match your search"}
+          </h3>
           <p className="text-sm text-diu-slate max-w-sm mx-auto">
-            Try adjusting your search criteria, selecting all semesters, or clearing your filters.
+            {initialOfferings.length === 0
+              ? "SE214 — Algorithm Design and Analysis (Batch 45, Section H) will be listed here once registration is opened by the Superadmin."
+              : "Try adjusting your search criteria, selecting all semesters, or clearing your filters."}
           </p>
         </div>
       ) : (

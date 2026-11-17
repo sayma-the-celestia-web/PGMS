@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import { DataService, db } from "./data-service";
 import { formatDate } from "../utils";
+import { DEPARTMENT_CONFIG } from "./seed-data";
 
 export interface ExcelExportFilter {
   semesterId?: string;
@@ -58,6 +59,7 @@ export async function generateTeamsExcelWorkbook(
     { header: "Serial", key: "serial", width: 10 },
     { header: "Team Name", key: "team_name", width: 28 },
     { header: "Course Code", key: "course_code", width: 14 },
+    { header: "Batch", key: "batch", width: 10 },
     { header: "Section", key: "section", width: 12 },
     { header: "Team Leader", key: "leader_name", width: 26 },
     { header: "Capacity", key: "capacity", width: 12 },
@@ -79,6 +81,7 @@ export async function generateTeamsExcelWorkbook(
       serial: idx + 1,
       team_name: team.team_name,
       course_code: team.course_offering?.course?.code || "N/A",
+      batch: DEPARTMENT_CONFIG.batch,
       section: team.course_offering?.section || "N/A",
       leader_name: team.leader?.student?.full_name || "Unassigned",
       capacity: team.capacity,
@@ -95,7 +98,7 @@ export async function generateTeamsExcelWorkbook(
 
   sheet1.autoFilter = {
     from: { row: 1, column: 1 },
-    to: { row: relevantTeams.length + 1, column: 9 },
+    to: { row: relevantTeams.length + 1, column: 10 },
   };
 
   // ====================================================================
@@ -112,6 +115,7 @@ export async function generateTeamsExcelWorkbook(
     { header: "Course Code", key: "course_code", width: 14 },
     { header: "Course Name", key: "course_name", width: 34 },
     { header: "Semester", key: "semester", width: 16 },
+    { header: "Batch", key: "batch", width: 10 },
     { header: "Section", key: "section", width: 12 },
     { header: "Team Name", key: "team_name", width: 26 },
     { header: "Role", key: "role", width: 14 },
@@ -142,6 +146,7 @@ export async function generateTeamsExcelWorkbook(
       course_code: offering?.course?.code || "N/A",
       course_name: offering?.course?.name || "N/A",
       semester: offering?.semester?.name || "N/A",
+      batch: DEPARTMENT_CONFIG.batch,
       section: offering?.section || "N/A",
       team_name: team?.team_name || "N/A",
       role: m.role,
@@ -156,7 +161,7 @@ export async function generateTeamsExcelWorkbook(
 
   sheet2.autoFilter = {
     from: { row: 1, column: 1 },
-    to: { row: relevantMemberships.length + 1, column: 10 },
+    to: { row: relevantMemberships.length + 1, column: 11 },
   };
 
   // ====================================================================
@@ -170,6 +175,7 @@ export async function generateTeamsExcelWorkbook(
     { header: "Semester", key: "semester", width: 18 },
     { header: "Course Code", key: "course_code", width: 14 },
     { header: "Course Name", key: "course_name", width: 34 },
+    { header: "Batch", key: "batch", width: 10 },
     { header: "Section", key: "section", width: 12 },
     { header: "Registration Status", key: "status", width: 20 },
     { header: "Total Teams", key: "total_teams", width: 14 },
@@ -197,6 +203,7 @@ export async function generateTeamsExcelWorkbook(
       semester: offering.semester?.name || "N/A",
       course_code: offering.course?.code || "N/A",
       course_name: offering.course?.name || "N/A",
+      batch: DEPARTMENT_CONFIG.batch,
       section: offering.section,
       status: offering.registration_status,
       total_teams: offeringTeams.length,
@@ -215,7 +222,7 @@ export async function generateTeamsExcelWorkbook(
 
   sheet3.autoFilter = {
     from: { row: 1, column: 1 },
-    to: { row: offerings.length + 1, column: 11 },
+    to: { row: offerings.length + 1, column: 12 },
   };
 
   const buffer = await workbook.xlsx.writeBuffer();

@@ -129,7 +129,13 @@ export function CourseDetailsClient({
         </div>
 
         {/* Course Info & Metrics Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 bg-slate-50/50 p-4 sm:p-6 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 bg-slate-50/50 p-4 sm:p-6 text-center">
+          <div className="p-2">
+            <span className="text-xs text-diu-slate block mb-1">Batch</span>
+            <span className="text-xl font-bold text-diu-navy font-heading">
+              45
+            </span>
+          </div>
           <div className="p-2">
             <span className="text-xs text-diu-slate block mb-1">Section</span>
             <span className="text-xl font-bold text-diu-navy font-heading">

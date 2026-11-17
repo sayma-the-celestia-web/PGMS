@@ -217,17 +217,6 @@ export function ManageClient() {
     }
   };
 
-  // Helper demo fill
-  const fillDemoToken = (type: "leader" | "member") => {
-    if (type === "leader") {
-      setTokenInput("pgms_tm_demo1234567890abcdef123456");
-      handleVerify(undefined, "pgms_tm_demo1234567890abcdef123456");
-    } else {
-      setTokenInput("pgms_mem_demo1234567890abcdef123456");
-      handleVerify(undefined, "pgms_mem_demo1234567890abcdef123456");
-    }
-  };
-
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       {/* Search Header */}
@@ -283,26 +272,7 @@ export function ManageClient() {
               </Button>
             </form>
 
-            {/* Quick Demo Assist */}
-            <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-2">
-              <span>Quick Demo Tokens:</span>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => fillDemoToken("leader")}
-                  className="text-diu-blue hover:underline bg-blue-50 px-2 py-1 rounded border border-blue-100"
-                >
-                  Test Team Leader
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillDemoToken("member")}
-                  className="text-emerald-700 hover:underline bg-emerald-50 px-2 py-1 rounded border border-emerald-100"
-                >
-                  Test Member
-                </button>
-              </div>
-            </div>
+          
           </CardContent>
         </Card>
       )}
