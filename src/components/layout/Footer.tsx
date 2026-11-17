@@ -63,11 +63,6 @@ export function Footer() {
                   How It Works
                 </Link>
               </li>
-              <li>
-                <Link href="/superadmin" className="hover:text-white transition-colors text-diu-accent">
-                  Superadmin Portal
-                </Link>
-              </li>
             </ul>
           </div>
 

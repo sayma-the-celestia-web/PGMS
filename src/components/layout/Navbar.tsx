@@ -32,15 +32,6 @@ export function Navbar() {
             <span className="text-slate-400">|</span>
             <span className="text-slate-200">Department of Software Engineering</span>
           </div>
-          <div className="hidden md:flex items-center space-x-4">
-            <Link
-              href="/superadmin"
-              className="text-slate-300 hover:text-white transition-colors flex items-center gap-1"
-            >
-              <Shield className="w-3 h-3 text-diu-accent" />
-              <span>Admin Portal</span>
-            </Link>
-          </div>
         </div>
       </div>
 
@@ -129,11 +120,6 @@ export function Navbar() {
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
             <Link href="/courses" onClick={() => setMobileMenuOpen(false)}>
               <Button className="w-full">Browse Courses</Button>
-            </Link>
-            <Link href="/superadmin" onClick={() => setMobileMenuOpen(false)}>
-              <Button variant="outline" className="w-full text-slate-700">
-                Superadmin Login
-              </Button>
             </Link>
           </div>
         </div>

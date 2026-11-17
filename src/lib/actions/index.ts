@@ -207,6 +207,10 @@ export async function createCourseOfferingAction(data: any) {
     revalidatePath("/courses");
     return { success: true, data: result };
   } catch (error: any) {
+    if (error?.errors && Array.isArray(error.errors)) {
+      const messages = error.errors.map((e: any) => e.message).join(", ");
+      return { success: false, error: messages };
+    }
     return { success: false, error: error?.message || "Failed to create course offering" };
   }
 }

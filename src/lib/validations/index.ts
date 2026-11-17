@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createTeamSchema = z.object({
-  courseOfferingId: z.string().uuid("Invalid course offering selected"),
+  courseOfferingId: z.string().min(1, "Invalid course offering selected"),
   teamName: z
     .string()
     .trim()
@@ -29,7 +29,7 @@ export const createTeamSchema = z.object({
 });
 
 export const joinTeamSchema = z.object({
-  teamId: z.string().uuid("Invalid team selected"),
+  teamId: z.string().min(1, "Invalid team selected"),
   fullName: z
     .string()
     .trim()
@@ -71,7 +71,7 @@ export const updateTeamSettingsSchema = z.object({
 });
 
 export const transferLeadershipSchema = z.object({
-  newLeaderMembershipId: z.string().uuid("Invalid target member selected"),
+  newLeaderMembershipId: z.string().min(1, "Invalid target member selected"),
 });
 
 export const updateMemberProfileSchema = z.object({
@@ -98,8 +98,8 @@ export const courseFormSchema = z.object({
 });
 
 export const courseOfferingBaseSchema = z.object({
-  course_id: z.string().uuid("Please select a course"),
-  semester_id: z.string().uuid("Please select a semester"),
+  course_id: z.string().min(1, "Please select a course"),
+  semester_id: z.string().min(1, "Please select a semester"),
   section: z.string().trim().min(1, "Section is required (e.g. A, B, 61_A)"),
   registration_status: z.enum(["UPCOMING", "OPEN", "PAUSED", "CLOSED"]),
   registration_start: z.string().min(10, "Registration start date/time is required"),

@@ -112,11 +112,10 @@ export function CourseDetailsClient({
                       href={`/courses/${course?.slug}?section=${encodeURIComponent(off.section)}`}
                     >
                       <button
-                        className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
-                          isCurrent
+                        className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${isCurrent
                             ? "bg-white text-diu-navy shadow-sm"
                             : "bg-white/10 hover:bg-white/20 text-white"
-                        }`}
+                          }`}
                       >
                         Section {off.section}
                       </button>
@@ -323,9 +322,8 @@ export function CourseDetailsClient({
                           Members: {activeMembers.length} / {team.capacity}
                         </span>
                         <span
-                          className={`font-semibold ${
-                            availableSlots > 0 ? "text-emerald-600" : "text-amber-600"
-                          }`}
+                          className={`font-semibold ${availableSlots > 0 ? "text-emerald-600" : "text-amber-600"
+                            }`}
                         >
                           {availableSlots > 0
                             ? `${availableSlots} slot${availableSlots > 1 ? "s" : ""} available`
@@ -334,13 +332,12 @@ export function CourseDetailsClient({
                       </div>
                       <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                         <div
-                          className={`h-2 rounded-full transition-all ${
-                            team.status === "FULL"
+                          className={`h-2 rounded-full transition-all ${team.status === "FULL"
                               ? "bg-amber-500"
                               : team.status === "CLOSED"
-                              ? "bg-slate-400"
-                              : "bg-emerald-500"
-                          }`}
+                                ? "bg-slate-400"
+                                : "bg-emerald-500"
+                            }`}
                           style={{
                             width: `${Math.min(
                               100,

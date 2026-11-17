@@ -28,7 +28,7 @@ export function RegistrationsClient({
   // Form states
   const [courseId, setCourseId] = useState(courses[0]?.id || "");
   const [semesterId, setSemesterId] = useState(semesters[0]?.id || "");
-  const [section, setSection] = useState("61_C");
+  const [section, setSection] = useState("H");
   const [status, setStatus] = useState<RegistrationStatus>("OPEN");
   const [minCap, setMinCap] = useState(3);
   const [maxCap, setMaxCap] = useState(5);
@@ -41,6 +41,14 @@ export function RegistrationsClient({
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!courseId) {
+      setError("Please select a course or create one first.");
+      return;
+    }
+    if (!semesterId) {
+      setError("Please create a semester first under the Semesters tab before adding an offering.");
+      return;
+    }
     setError(null);
     setLoading(true);
 
@@ -123,32 +131,42 @@ export function RegistrationsClient({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold">Course *</Label>
-                  <select
-                    value={courseId}
-                    onChange={(e) => setCourseId(e.target.value)}
-                    className="w-full h-10 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-diu-blue"
-                  >
-                    {courses.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.code} — {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  {courses.length === 0 ? (
+                    <p className="text-xs text-amber-600 py-2">No courses available. Please add a course first.</p>
+                  ) : (
+                    <select
+                      value={courseId}
+                      onChange={(e) => setCourseId(e.target.value)}
+                      className="w-full h-10 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-diu-blue"
+                    >
+                      {courses.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.code} — {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold">Semester *</Label>
-                  <select
-                    value={semesterId}
-                    onChange={(e) => setSemesterId(e.target.value)}
-                    className="w-full h-10 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-diu-blue"
-                  >
-                    {semesters.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.academic_year})
-                      </option>
-                    ))}
-                  </select>
+                  {semesters.length === 0 ? (
+                    <p className="text-xs text-amber-600 py-2">
+                      No semester configured. Go to <strong className="underline">Semesters</strong> tab and create one first.
+                    </p>
+                  ) : (
+                    <select
+                      value={semesterId}
+                      onChange={(e) => setSemesterId(e.target.value)}
+                      className="w-full h-10 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-diu-blue"
+                    >
+                      {semesters.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.academic_year})
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
