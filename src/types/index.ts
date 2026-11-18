@@ -4,6 +4,7 @@ export type MembershipRole = "LEADER" | "MEMBER";
 export type MembershipStatus = "ACTIVE" | "LEFT" | "REMOVED";
 export type CredentialType = "TEAM_MANAGEMENT" | "MEMBERSHIP";
 export type AdminRole = "SUPERADMIN" | "ADMIN";
+export type JoinRequestStatus = "PENDING" | "ACCEPTED" | "REJECTED";
 
 export interface Semester {
   id: string;
@@ -36,6 +37,8 @@ export interface CourseOffering {
   registration_deadline: string;
   min_team_capacity: number;
   max_team_capacity: number;
+  max_teams_limit: number; // Maximum presentation teams allowed (e.g. 20)
+  topic_enabled: boolean;  // Whether topic input is required/enabled by superadmin
   created_at: string;
   updated_at: string;
   // Joined relation fields
@@ -67,11 +70,27 @@ export interface TeamMembership {
   student?: Student;
 }
 
+export interface TeamJoinRequest {
+  id: string;
+  team_id: string;
+  course_offering_id: string;
+  student_name: string;
+  student_id: string;
+  status: JoinRequestStatus;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Team {
   id: string;
   course_offering_id: string;
+  presentation_number: number;
   team_name: string;
   capacity: number;
+  topic?: string | null;
+  slide_link?: string | null;
+  slide_file_name?: string | null;
+  slide_file_url?: string | null;
   leader_membership_id: string | null;
   status: TeamStatus;
   created_at: string;
@@ -82,6 +101,7 @@ export interface Team {
   leader?: TeamMembership;
   registered_count?: number;
   available_slots?: number;
+  join_requests?: TeamJoinRequest[];
 }
 
 export interface RegistrationCredential {
@@ -125,6 +145,22 @@ export interface CreateTeamPayload {
   leaderStudentId: string;
 }
 
+export interface MultiStepMemberItem {
+  name: string;
+  studentId: string;
+}
+
+export interface MultiStepRegisterTeamPayload {
+  courseOfferingId: string;
+  teamName?: string;
+  capacity: number;
+  topic?: string;
+  presentation_number: number;
+  leaderName: string;
+  leaderStudentId: string;
+  members: MultiStepMemberItem[];
+}
+
 export interface JoinTeamPayload {
   teamId: string;
   fullName: string;
@@ -135,9 +171,10 @@ export interface TeamCreationResult {
   success: boolean;
   teamId: string;
   teamName: string;
+  presentationNumber: number;
   membershipId: string;
-  teamManagementToken: string;
-  membershipToken: string;
+  teamManagementToken?: string;
+  membershipToken?: string;
   offeringSlug?: string;
   message?: string;
 }
@@ -145,8 +182,8 @@ export interface TeamCreationResult {
 export interface JoinTeamResult {
   success: boolean;
   teamId: string;
-  membershipId: string;
-  membershipToken: string;
+  membershipId?: string;
+  membershipToken?: string;
   teamName: string;
   message?: string;
 }
@@ -156,5 +193,13 @@ export interface ReferenceAuthResult {
   credentialType?: CredentialType;
   team?: Team;
   membership?: TeamMembership;
+  error?: string;
+}
+
+export interface LeaderLoginResult {
+  success: boolean;
+  team?: Team;
+  leaderStudent?: Student;
+  leaderMembership?: TeamMembership;
   error?: string;
 }

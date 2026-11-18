@@ -1,120 +1,147 @@
 import { DataService, db } from "../src/lib/services/data-service";
-import { generateTeamsExcelWorkbook } from "../src/lib/services/excel-service";
-import { hashToken } from "../src/lib/utils/crypto";
+import { generateTeamsExcelWorkbook, importTeamsFromExcelBuffer } from "../src/lib/services/excel-service";
 
 async function runTests() {
   console.log("====================================================");
-  console.log("STARTING PGMS SYSTEM & INTEGRITY VERIFICATION TESTS");
+  console.log("STARTING PGMS TEAM REGISTRATION PLATFORM TEST SUITE");
   console.log("====================================================");
 
   // Test 1: Fetch initial offerings
   console.log("\n[TEST 1] Testing course offerings fetch...");
   const offerings = await DataService.getCourseOfferings();
   if (offerings.length === 0) throw new Error("Offerings list is empty");
-  console.log(`✓ Retrieved ${offerings.length} course offerings successfully.`);
-
-  // Test 2: Atomic Team Creation
-  console.log("\n[TEST 2] Testing atomic team creation...");
   const testOffering = offerings.find((o) => o.registration_status === "OPEN")!;
-  const leaderStudentId = `221-35-${Math.floor(1000 + Math.random() * 9000)}`;
-  const createRes = await DataService.createTeamWithLeader({
+  console.log(`✓ Retrieved ${offerings.length} course offerings. Using ${testOffering.course?.code} Sec ${testOffering.section}.`);
+
+  // Test 2: Presentation Slots Availability
+  console.log("\n[TEST 2] Testing presentation slots availability...");
+  const slots = await DataService.getAvailablePresentationNumbers(testOffering.id);
+  if (slots.length === 0) throw new Error("Presentation slots empty");
+  console.log(`✓ Available presentation slots generated up to limit: ${slots.length} slots.`);
+  console.log(`✓ Slot 1 available: ${!slots[0].isTaken}`);
+
+  // Test 3: Multi-step Team Registration (Step 1, Step 2, Step 3)
+  console.log("\n[TEST 3] Testing multi-step team registration (Leader + Members + Slot)...");
+  const leaderId = "252-35-101";
+  const member2Id = "252-35-102";
+
+  const regResult = await DataService.registerTeamMultiStep({
     courseOfferingId: testOffering.id,
-    teamName: `Alpha Pioneers ${Date.now()}`,
-    capacity: 3,
-    leaderName: "Kazi Nasim",
-    leaderStudentId: leaderStudentId,
+    teamName: "Neural Ninjas",
+    capacity: 4,
+    topic: "Transformer Attention Mechanisms",
+    presentation_number: 1,
+    leaderName: "Tanvir Ahmed",
+    leaderStudentId: leaderId,
+    members: [{ name: "Ayesha Rahman", studentId: member2Id }],
   });
 
-  if (!createRes.success || !createRes.teamManagementToken || !createRes.membershipToken) {
-    throw new Error("Team creation failed or tokens were not generated.");
+  if (!regResult.success || !regResult.teamId) {
+    throw new Error("Multi-step team registration failed!");
   }
-  console.log(`✓ Team "${createRes.teamName}" created with ID: ${createRes.teamId}`);
-  console.log(`✓ Team Management Token: ${createRes.teamManagementToken.slice(0, 15)}...`);
-  console.log(`✓ Membership Token: ${createRes.membershipToken.slice(0, 15)}...`);
+  console.log(`✓ Team "${regResult.teamName}" registered with ID: ${regResult.teamId} at Slot #${regResult.presentationNumber}.`);
 
-  // Test 3: Duplicate Active Registration Prevention
-  console.log("\n[TEST 3] Testing duplicate student registration rejection...");
+  // Verify Slot 1 is now marked taken
+  const slotsAfter = await DataService.getAvailablePresentationNumbers(testOffering.id);
+  const slot1 = slotsAfter.find((s) => s.number === 1);
+  if (!slot1?.isTaken) throw new Error("Slot 1 should be marked taken!");
+  console.log(`✓ Slot #1 verified as taken by: "${slot1.takenByTeam}".`);
+
+  // Test 4: Duplicate Slot Rejection
+  console.log("\n[TEST 4] Testing duplicate presentation slot collision rejection...");
   try {
-    await DataService.createTeamWithLeader({
+    await DataService.registerTeamMultiStep({
       courseOfferingId: testOffering.id,
-      teamName: `Duplicate Team ${Date.now()}`,
+      teamName: "Second Team",
       capacity: 3,
+      presentation_number: 1, // Same slot #1
       leaderName: "Kazi Nasim",
-      leaderStudentId: leaderStudentId, // same student ID
+      leaderStudentId: "252-35-103",
+      members: [],
     });
-    throw new Error("Duplicate active registration was not rejected!");
+    throw new Error("Duplicate presentation slot should have been rejected!");
   } catch (err: any) {
-    console.log(`✓ Duplicate registration successfully blocked: "${err.message}"`);
+    console.log(`✓ Duplicate slot correctly rejected: "${err.message}"`);
   }
 
-  // Test 4: Atomic Join Team until FULL
-  console.log("\n[TEST 4] Testing atomic team join and capacity enforcement...");
-  const student2Id = `221-35-${Math.floor(1000 + Math.random() * 9000)}`;
-  const joinRes1 = await DataService.joinTeam({
-    teamId: createRes.teamId,
-    fullName: "Ayesha Siddiqua",
-    studentId: student2Id,
+  // Test 5: Team Leader Login via Leader Name & Student ID
+  console.log("\n[TEST 5] Testing Team Leader login via credentials (Name & Student ID)...");
+  const loginSuccess = await DataService.leaderLogin("Tanvir Ahmed", leaderId);
+  if (!loginSuccess.success || !loginSuccess.team) {
+    throw new Error(`Leader login failed: ${loginSuccess.error}`);
+  }
+  console.log(`✓ Team leader successfully logged in to manage team: "${loginSuccess.team.team_name}".`);
+
+  // Test 6: Team Leader Name Edit & Presentation Slides Update
+  console.log("\n[TEST 6] Testing Team Leader updating team name and presentation slides...");
+  const updatedTeamName = await DataService.updateTeamName(regResult.teamId, "Neural Ninjas Elite");
+  if (updatedTeamName.team_name !== "Neural Ninjas Elite") {
+    throw new Error("Team name update failed!");
+  }
+  console.log(`✓ Team name updated to: "${updatedTeamName.team_name}".`);
+
+  const updatedSlides = await DataService.updateTeamSlides(regResult.teamId, {
+    slide_link: "https://docs.google.com/presentation/d/sample123",
+    slide_file_name: "presentation_neural_ninjas.pptx",
   });
-  console.log(`✓ Member 2 joined. Token generated: ${joinRes1.membershipToken.slice(0, 15)}...`);
+  if (updatedSlides.slide_link !== "https://docs.google.com/presentation/d/sample123") {
+    throw new Error("Slide link update failed!");
+  }
+  console.log(`✓ Slides updated with link and file: "${updatedSlides.slide_file_name}".`);
 
-  const student3Id = `221-35-${Math.floor(1000 + Math.random() * 9000)}`;
-  const joinRes2 = await DataService.joinTeam({
-    teamId: createRes.teamId,
-    fullName: "Kamrul Islam",
-    studentId: student3Id,
+  // Test 7: Student Requests to Join Team
+  console.log("\n[TEST 7] Testing student request to join team...");
+  const joinReq = await DataService.requestJoinTeam({
+    teamId: regResult.teamId,
+    studentName: "Mahmud Hasan",
+    studentId: "252-35-104",
   });
-  console.log(`✓ Member 3 joined (Capacity reached).`);
+  if (!joinReq.success) throw new Error("Join request failed!");
+  console.log(`✓ Join request submitted successfully for Mahmud Hasan (252-35-104).`);
 
-  const teamAfterFull = await DataService.getTeamById(createRes.teamId);
-  if (teamAfterFull?.status !== "FULL") {
-    throw new Error(`Expected team status to be FULL, got ${teamAfterFull?.status}`);
-  }
-  console.log(`✓ Team status correctly transitioned to: ${teamAfterFull.status}`);
+  // Test 8: Leader Accepts Join Request
+  console.log("\n[TEST 8] Testing leader accepting join request...");
+  const teamBefore = await DataService.getTeamById(regResult.teamId, true);
+  const pending = teamBefore?.join_requests?.[0];
+  if (!pending) throw new Error("Pending request not found on team!");
 
-  // Test 5: Over-capacity Join Prevention
-  console.log("\n[TEST 5] Testing over-capacity join rejection...");
-  try {
-    await DataService.joinTeam({
-      teamId: createRes.teamId,
-      fullName: "Extra Student",
-      studentId: `221-35-9999`,
-    });
-    throw new Error("Should not have allowed 4th member in 3-capacity team!");
-  } catch (err: any) {
-    console.log(`✓ Over-capacity join correctly rejected: "${err.message}"`);
-  }
+  const acceptRes = await DataService.handleJoinRequest(pending.id, "ACCEPT");
+  if (!acceptRes.success) throw new Error("Failed to accept join request!");
+  console.log(`✓ Join request accepted: "${acceptRes.message}".`);
 
-  // Test 6: Reference Token Verification & Management
-  console.log("\n[TEST 6] Testing private reference credential verification...");
-  const authTeamRes = await DataService.verifyReferenceToken(createRes.teamManagementToken);
-  if (!authTeamRes.valid || authTeamRes.credentialType !== "TEAM_MANAGEMENT") {
-    throw new Error("Team management token verification failed!");
-  }
-  console.log(`✓ Team Management token verified successfully for: ${authTeamRes.team?.team_name}`);
-
-  // Test 7: Leadership Transfer
-  console.log("\n[TEST 7] Testing leadership transfer...");
-  const transferRes = await DataService.transferLeadership(
-    createRes.teamManagementToken,
-    joinRes1.membershipId
+  const teamAfter = await DataService.getTeamById(regResult.teamId, true);
+  const isMemberAdded = teamAfter?.memberships?.some(
+    (m) => m.student?.student_id === "252-35-104"
   );
-  if (!transferRes.success) throw new Error("Leadership transfer failed!");
-  const updatedTeam = await DataService.getTeamById(createRes.teamId);
-  if (updatedTeam?.leader_membership_id !== joinRes1.membershipId) {
-    throw new Error("New leader membership ID not updated on team!");
-  }
-  console.log(`✓ Leadership successfully transferred to member: ${joinRes1.membershipId}`);
+  if (!isMemberAdded) throw new Error("Accepted student not found in active memberships!");
+  console.log(`✓ Student confirmed as active team member. Active count: ${teamAfter?.memberships?.length}/${teamAfter?.capacity}.`);
 
-  // Test 8: ExcelJS Export Generation
-  console.log("\n[TEST 8] Testing Excel .xlsx 3-sheet export generation...");
+  // Test 9: Prevention of Multiple Team Registrations
+  console.log("\n[TEST 9] Testing multi-team registration prevention for same subject...");
+  try {
+    await DataService.requestJoinTeam({
+      teamId: regResult.teamId,
+      studentName: "Tanvir Ahmed",
+      studentId: leaderId, // Already leader
+    });
+    throw new Error("Should not allow already registered student to join another team!");
+  } catch (err: any) {
+    console.log(`✓ Multiple registration blocked: "${err.message}"`);
+  }
+
+  // Test 10: Excel Export & Import
+  console.log("\n[TEST 10] Testing Excel .xlsx export & import round-trip...");
   const excelBuffer = await generateTeamsExcelWorkbook();
   if (!excelBuffer || excelBuffer.length < 500) {
     throw new Error("Excel export generated invalid or empty buffer!");
   }
-  console.log(`✓ Excel workbook generated successfully (${excelBuffer.length} bytes).`);
+  console.log(`✓ Excel workbook exported successfully (${excelBuffer.length} bytes).`);
+
+  const importResult = await importTeamsFromExcelBuffer(excelBuffer, testOffering.id);
+  console.log(`✓ Excel import executed: "${importResult.message}".`);
 
   console.log("\n====================================================");
-  console.log("ALL PGMS SYSTEM & INTEGRITY TESTS PASSED SUCCESSFULLY! ✓");
+  console.log("ALL PGMS TEAM REGISTRATION PLATFORM TESTS PASSED! ✓");
   console.log("====================================================");
 }
 

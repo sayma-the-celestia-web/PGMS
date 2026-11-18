@@ -19,18 +19,20 @@ import {
 export const dynamic = "force-dynamic";
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function generateMetadata({ params }: Props) {
-  const team = await DataService.getTeamById(params.id);
+  const { id } = await params;
+  const team = await DataService.getTeamById(id);
   return {
     title: `${team ? team.team_name : "Team Details"} | PGMS DIU`,
   };
 }
 
 export default async function TeamPage({ params }: Props) {
-  const team = await DataService.getTeamById(params.id);
+  const { id } = await params;
+  const team = await DataService.getTeamById(id);
   if (!team) {
     notFound();
   }

@@ -23,7 +23,7 @@ export default function SuperadminLoginPage() {
     setLoading(true);
 
     try {
-      const res = await superadminLoginAction(password);
+      const res = await superadminLoginAction(password, email);
       if (res.success) {
         router.push("/superadmin");
         router.refresh();

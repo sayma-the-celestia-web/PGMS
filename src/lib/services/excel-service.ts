@@ -1,7 +1,8 @@
 import ExcelJS from "exceljs";
 import { DataService, db } from "./data-service";
-import { formatDate } from "../utils";
+import { formatDate, normalizeStudentId } from "../utils";
 import { DEPARTMENT_CONFIG } from "./seed-data";
+import { Team, TeamMembership, Student } from "@/types";
 
 export interface ExcelExportFilter {
   semesterId?: string;
@@ -56,15 +57,18 @@ export async function generateTeamsExcelWorkbook(
   });
 
   sheet1.columns = [
-    { header: "Serial", key: "serial", width: 10 },
+    { header: "Serial", key: "serial", width: 8 },
+    { header: "Team Slot / No.", key: "presentation_number", width: 16 },
     { header: "Team Name", key: "team_name", width: 28 },
+    { header: "Topic", key: "topic", width: 28 },
     { header: "Course Code", key: "course_code", width: 14 },
     { header: "Batch", key: "batch", width: 10 },
     { header: "Section", key: "section", width: 12 },
     { header: "Team Leader", key: "leader_name", width: 26 },
     { header: "Capacity", key: "capacity", width: 12 },
-    { header: "Registered Members", key: "registered_members", width: 20 },
+    { header: "Active Members", key: "registered_members", width: 16 },
     { header: "Available Slots", key: "available_slots", width: 16 },
+    { header: "Slides Link / File", key: "slides", width: 32 },
     { header: "Status", key: "status", width: 14 },
   ];
 
@@ -79,7 +83,9 @@ export async function generateTeamsExcelWorkbook(
   relevantTeams.forEach((team, idx) => {
     const row = sheet1.addRow({
       serial: idx + 1,
+      presentation_number: team.presentation_number ? `Team #${team.presentation_number}` : `Slot ${idx + 1}`,
       team_name: team.team_name,
+      topic: team.topic || "N/A",
       course_code: team.course_offering?.course?.code || "N/A",
       batch: DEPARTMENT_CONFIG.batch,
       section: team.course_offering?.section || "N/A",
@@ -87,6 +93,7 @@ export async function generateTeamsExcelWorkbook(
       capacity: team.capacity,
       registered_members: team.registered_count || 0,
       available_slots: team.available_slots || 0,
+      slides: team.slide_link || team.slide_file_name || "None uploaded",
       status: team.status,
     });
 
@@ -98,7 +105,7 @@ export async function generateTeamsExcelWorkbook(
 
   sheet1.autoFilter = {
     from: { row: 1, column: 1 },
-    to: { row: relevantTeams.length + 1, column: 10 },
+    to: { row: relevantTeams.length + 1, column: 13 },
   };
 
   // ====================================================================
@@ -227,4 +234,136 @@ export async function generateTeamsExcelWorkbook(
 
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);
+}
+
+export async function importTeamsFromExcelBuffer(
+  buffer: Buffer,
+  offeringId?: string
+): Promise<{ teamsCreated: number; studentsCreated: number; message: string }> {
+  const workbook = new ExcelJS.Workbook();
+  // ExcelJS accepts buffer directly
+  await workbook.xlsx.load(buffer as any);
+
+  const sheet =
+    workbook.getWorksheet("Student Details") ||
+    workbook.getWorksheet("Team Summary") ||
+    workbook.worksheets[0];
+
+  if (!sheet) throw new Error("No worksheet found in uploaded Excel file.");
+
+  let targetOffering = offeringId ? db.offerings.find((o) => o.id === offeringId) : db.offerings[0];
+  if (!targetOffering) {
+    throw new Error("No course offering available to import teams into. Please create one first.");
+  }
+
+  const rows: { studentName: string; studentId: string; teamName: string; role: "LEADER" | "MEMBER" }[] = [];
+  
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return; // Skip headers
+    const name = row.getCell(2).text?.trim();
+    const id = row.getCell(3).text?.trim();
+    const team = row.getCell(9).text?.trim() || row.getCell(2).text?.trim();
+    const roleText = row.getCell(10).text?.trim()?.toUpperCase();
+
+    if (name && id && id !== "Student ID" && id !== "[PROTECTED]") {
+      rows.push({
+        studentName: name,
+        studentId: id,
+        teamName: team || `Imported Team`,
+        role: roleText === "LEADER" ? "LEADER" : "MEMBER",
+      });
+    }
+  });
+
+  if (rows.length === 0) {
+    throw new Error("No valid student/team records found in the uploaded Excel workbook.");
+  }
+
+  const teamGroups: Record<string, typeof rows> = {};
+  for (const r of rows) {
+    if (!teamGroups[r.teamName]) teamGroups[r.teamName] = [];
+    teamGroups[r.teamName].push(r);
+  }
+
+  let teamsCreated = 0;
+  let studentsCreated = 0;
+
+  for (const [tName, members] of Object.entries(teamGroups)) {
+    let team = db.teams.find(
+      (t) =>
+        t.course_offering_id === targetOffering.id &&
+        t.team_name.toLowerCase() === tName.toLowerCase()
+    );
+
+    if (!team) {
+      const takenNums = new Set(
+        db.teams
+          .filter((t) => t.course_offering_id === targetOffering.id)
+          .map((t) => t.presentation_number)
+      );
+      let nextNum = 1;
+      while (takenNums.has(nextNum)) nextNum++;
+
+      team = {
+        id: `team-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        course_offering_id: targetOffering.id,
+        presentation_number: nextNum,
+        team_name: tName,
+        capacity: Math.max(members.length, targetOffering.min_team_capacity || 2),
+        leader_membership_id: null,
+        status: members.length >= (targetOffering.max_team_capacity || 5) ? "FULL" : "OPEN",
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      db.teams.push(team);
+      teamsCreated++;
+    }
+
+    for (const mem of members) {
+      const normId = normalizeStudentId(mem.studentId);
+      let student = db.students.find((s) => s.normalized_student_id === normId);
+      if (!student) {
+        student = {
+          id: `stu-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          full_name: mem.studentName,
+          student_id: mem.studentId,
+          normalized_student_id: normId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        db.students.push(student);
+        studentsCreated++;
+      }
+
+      const existingMem = db.memberships.find(
+        (m) =>
+          m.team_id === team!.id &&
+          m.student_id === student!.id &&
+          m.status === "ACTIVE"
+      );
+      if (!existingMem) {
+        const memId = `mem-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+        const newMem: TeamMembership = {
+          id: memId,
+          team_id: team.id,
+          student_id: student.id,
+          course_offering_id: targetOffering.id,
+          role: mem.role === "LEADER" ? "LEADER" : "MEMBER",
+          status: "ACTIVE",
+          joined_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        db.memberships.push(newMem);
+        if (mem.role === "LEADER" || !team.leader_membership_id) {
+          team.leader_membership_id = memId;
+        }
+      }
+    }
+  }
+
+  return {
+    teamsCreated,
+    studentsCreated,
+    message: `Successfully imported ${teamsCreated} team(s) and ${studentsCreated} student(s) into ${targetOffering.section}!`,
+  };
 }

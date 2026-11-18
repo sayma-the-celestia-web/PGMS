@@ -8,10 +8,13 @@ import {
   RegistrationCredential,
   AuditLog,
   CreateTeamPayload,
+  MultiStepRegisterTeamPayload,
   JoinTeamPayload,
   TeamCreationResult,
   JoinTeamResult,
   ReferenceAuthResult,
+  LeaderLoginResult,
+  TeamJoinRequest,
 } from "@/types";
 import {
   initialSemesters,
@@ -35,6 +38,7 @@ class InMemoryDB {
   teams: Team[] = [...initialTeams];
   memberships: TeamMembership[] = [...initialMemberships];
   credentials: RegistrationCredential[] = [...initialCredentials];
+  joinRequests: TeamJoinRequest[] = [];
   auditLogs: AuditLog[] = [
     {
       id: "log-1",
@@ -196,6 +200,28 @@ export class DataService {
     return course;
   }
 
+  static async deleteCourse(id: string): Promise<boolean> {
+    const courseIdx = db.courses.findIndex((c) => c.id === id);
+    if (courseIdx === -1) throw new Error("Course not found");
+
+    const offeringIds = db.offerings.filter((o) => o.course_id === id).map((o) => o.id);
+    const teamIds = db.teams.filter((t) => offeringIds.includes(t.course_offering_id)).map((t) => t.id);
+
+    db.memberships = db.memberships.filter((m) => !teamIds.includes(m.team_id));
+    db.credentials = db.credentials.filter((c) => !teamIds.includes(c.team_id || ""));
+    db.teams = db.teams.filter((t) => !offeringIds.includes(t.course_offering_id));
+    db.offerings = db.offerings.filter((o) => o.course_id !== id);
+    db.courses.splice(courseIdx, 1);
+
+    await this.logAuditEvent({
+      action: "DELETE_COURSE",
+      targetType: "COURSE",
+      targetId: id,
+      details: { courseId: id },
+    });
+    return true;
+  }
+
   // -------------------------------------------------------------
   // COURSE OFFERINGS
   // -------------------------------------------------------------
@@ -291,6 +317,8 @@ export class DataService {
     const newOffering: CourseOffering = {
       id: `off-${Date.now()}`,
       ...input,
+      max_teams_limit: input.max_teams_limit ?? 20,
+      topic_enabled: input.topic_enabled ?? true,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -390,6 +418,9 @@ export class DataService {
     const leader = activeMemberships.find((m) => m.role === "LEADER");
     const registered_count = activeMemberships.length;
     const available_slots = Math.max(0, team.capacity - registered_count);
+    const join_requests = db.joinRequests
+      ? db.joinRequests.filter((r) => r.team_id === team.id && r.status === "PENDING")
+      : [];
 
     return {
       ...team,
@@ -398,6 +429,531 @@ export class DataService {
       leader,
       registered_count,
       available_slots,
+      join_requests,
+    };
+  }
+
+  // -------------------------------------------------------------
+  // PRESENTATION NUMBERS AVAILABILITY
+  // -------------------------------------------------------------
+  static async getAvailablePresentationNumbers(offeringId: string): Promise<{
+    number: number;
+    label: string;
+    isTaken: boolean;
+    takenByTeam?: string;
+  }[]> {
+    const offering = db.offerings.find((o) => o.id === offeringId);
+    const limit = offering?.max_teams_limit || 20;
+    const existingTeams = db.teams.filter((t) => t.course_offering_id === offeringId);
+
+    const result = [];
+    for (let i = 1; i <= limit; i++) {
+      const takenTeam = existingTeams.find((t) => t.presentation_number === i);
+      const suffix =
+        i === 1 ? "1st" : i === 2 ? "2nd" : i === 3 ? "3rd" : `${i}th`;
+      result.push({
+        number: i,
+        label: `${suffix} Team (Slot ${i})`,
+        isTaken: !!takenTeam,
+        takenByTeam: takenTeam?.team_name,
+      });
+    }
+    return result;
+  }
+
+  // -------------------------------------------------------------
+  // MULTI-STEP ATOMIC TEAM REGISTRATION
+  // -------------------------------------------------------------
+  static async registerTeamMultiStep(
+    payload: MultiStepRegisterTeamPayload
+  ): Promise<TeamCreationResult> {
+    const releaseLock = await db.acquireLock(`offering:${payload.courseOfferingId}`);
+    try {
+      const offering = db.offerings.find((o) => o.id === payload.courseOfferingId);
+      if (!offering) throw new Error("Course offering not found");
+
+      if (offering.registration_status !== "OPEN") {
+        throw new Error(
+          `Registration for this course is ${offering.registration_status}. Team creation is unavailable.`
+        );
+      }
+
+      if (new Date() > new Date(offering.registration_deadline)) {
+        throw new Error("Registration deadline has passed for this subject.");
+      }
+
+      const minCap = offering.min_team_capacity || 2;
+      const maxCap = offering.max_team_capacity || 5;
+      if (payload.capacity < minCap || payload.capacity > maxCap) {
+        throw new Error(`Team size must be between ${minCap} and ${maxCap} members.`);
+      }
+
+      const maxTeamsLimit = offering.max_teams_limit || 20;
+      if (payload.presentation_number < 1 || payload.presentation_number > maxTeamsLimit) {
+        throw new Error(`Presentation team number must be between 1 and ${maxTeamsLimit}.`);
+      }
+
+      // Check presentation number collision
+      const existingTeamWithNumber = db.teams.find(
+        (t) =>
+          t.course_offering_id === payload.courseOfferingId &&
+          t.presentation_number === payload.presentation_number
+      );
+      if (existingTeamWithNumber) {
+        throw new Error(
+          `Presentation Team #${payload.presentation_number} is already taken by "${existingTeamWithNumber.team_name}". Please choose another available team number.`
+        );
+      }
+
+      // Validate leader ID format
+      const leaderNormId = normalizeStudentId(payload.leaderStudentId);
+      if (!leaderNormId) throw new Error("Team Leader Student ID is required.");
+
+      // Check leader isn't already in an active team for this offering
+      let leaderStudent = db.students.find((s) => s.normalized_student_id === leaderNormId);
+      if (leaderStudent) {
+        const alreadyRegistered = db.memberships.some(
+          (m) =>
+            m.student_id === leaderStudent!.id &&
+            m.course_offering_id === payload.courseOfferingId &&
+            m.status === "ACTIVE"
+        );
+        if (alreadyRegistered) {
+          throw new Error(
+            `Team Leader (${payload.leaderStudentId}) is already registered in an active team for this course.`
+          );
+        }
+        leaderStudent.full_name = payload.leaderName.trim();
+        leaderStudent.updated_at = new Date().toISOString();
+      } else {
+        leaderStudent = {
+          id: `stu-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          full_name: payload.leaderName.trim(),
+          student_id: payload.leaderStudentId.trim(),
+          normalized_student_id: leaderNormId,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        db.students.push(leaderStudent);
+      }
+
+      // Validate member students
+      const allStudentIds = [leaderNormId];
+      const memberStudents: Student[] = [];
+
+      for (const mem of payload.members) {
+        if (!mem.name?.trim() || !mem.studentId?.trim()) continue;
+        const memNormId = normalizeStudentId(mem.studentId);
+        if (allStudentIds.includes(memNormId)) {
+          throw new Error(
+            `Duplicate student ID (${mem.studentId}) found in registration list. Each student can only be listed once.`
+          );
+        }
+        allStudentIds.push(memNormId);
+
+        let memStudent = db.students.find((s) => s.normalized_student_id === memNormId);
+        if (memStudent) {
+          const alreadyRegistered = db.memberships.some(
+            (m) =>
+              m.student_id === memStudent!.id &&
+              m.course_offering_id === payload.courseOfferingId &&
+              m.status === "ACTIVE"
+          );
+          if (alreadyRegistered) {
+            throw new Error(
+              `Student ${mem.name} (${mem.studentId}) is already registered in another team for this course.`
+            );
+          }
+          memStudent.full_name = mem.name.trim();
+          memStudent.updated_at = new Date().toISOString();
+        } else {
+          memStudent = {
+            id: `stu-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            full_name: mem.name.trim(),
+            student_id: mem.studentId.trim(),
+            normalized_student_id: memNormId,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          db.students.push(memStudent);
+        }
+        memberStudents.push(memStudent);
+      }
+
+      const totalInitialCount = 1 + memberStudents.length;
+      if (totalInitialCount > payload.capacity) {
+        throw new Error(
+          `Total registered members (${totalInitialCount}) exceeds chosen team size (${payload.capacity}).`
+        );
+      }
+
+      // Team Name resolution: optional, fallback to "Team {presentation_number}"
+      const finalTeamName =
+        payload.teamName?.trim() || `Team ${payload.presentation_number}`;
+
+      // Duplicate team name check in this offering
+      const duplicateName = db.teams.some(
+        (t) =>
+          t.course_offering_id === payload.courseOfferingId &&
+          t.team_name.toLowerCase() === finalTeamName.toLowerCase()
+      );
+      if (duplicateName) {
+        throw new Error(
+          `A team named "${finalTeamName}" already exists in this section. Please select another name.`
+        );
+      }
+
+      const teamId = `team-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const leaderMembershipId = `mem-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const initialStatus = totalInitialCount >= payload.capacity ? "FULL" : "OPEN";
+
+      const newTeam: Team = {
+        id: teamId,
+        course_offering_id: payload.courseOfferingId,
+        presentation_number: payload.presentation_number,
+        team_name: finalTeamName,
+        capacity: payload.capacity,
+        topic: payload.topic?.trim() || null,
+        leader_membership_id: leaderMembershipId,
+        status: initialStatus,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      db.teams.push(newTeam);
+
+      // Create Leader Membership
+      db.memberships.push({
+        id: leaderMembershipId,
+        team_id: teamId,
+        student_id: leaderStudent.id,
+        course_offering_id: payload.courseOfferingId,
+        role: "LEADER",
+        status: "ACTIVE",
+        joined_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+
+      // Create Member Memberships
+      for (const memStudent of memberStudents) {
+        db.memberships.push({
+          id: `mem-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          team_id: teamId,
+          student_id: memStudent.id,
+          course_offering_id: payload.courseOfferingId,
+          role: "MEMBER",
+          status: "ACTIVE",
+          joined_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      }
+
+      // Generate credentials for compatibility
+      const teamManagementToken = generateToken("pgms_tm_");
+      db.credentials.push({
+        id: `cred-tm-${Date.now()}`,
+        credential_type: "TEAM_MANAGEMENT",
+        team_id: teamId,
+        membership_id: null,
+        token_hash: hashToken(teamManagementToken),
+        created_at: new Date().toISOString(),
+        expires_at: null,
+        revoked_at: null,
+        last_used_at: null,
+      });
+
+      const course = db.courses.find((c) => c.id === offering.course_id);
+
+      return {
+        success: true,
+        teamId,
+        teamName: newTeam.team_name,
+        presentationNumber: newTeam.presentation_number,
+        membershipId: leaderMembershipId,
+        teamManagementToken,
+        offeringSlug: course?.slug,
+        message: `Team "${newTeam.team_name}" registered successfully as Presentation Team #${newTeam.presentation_number}!`,
+      };
+    } finally {
+      releaseLock();
+    }
+  }
+
+  // -------------------------------------------------------------
+  // TEAM LEADER LOGIN
+  // -------------------------------------------------------------
+  static async leaderLogin(
+    leaderName: string,
+    leaderStudentId: string
+  ): Promise<LeaderLoginResult> {
+    const normId = normalizeStudentId(leaderStudentId);
+    if (!normId) {
+      return { success: false, error: "Please provide a valid Student ID." };
+    }
+
+    const student = db.students.find((s) => s.normalized_student_id === normId);
+    if (!student) {
+      return {
+        success: false,
+        error: `No student record found with ID "${leaderStudentId}". Please verify your ID.`,
+      };
+    }
+
+    const nameMatches =
+      student.full_name.trim().toLowerCase() === leaderName.trim().toLowerCase() ||
+      student.full_name.toLowerCase().includes(leaderName.trim().toLowerCase()) ||
+      leaderName.trim().toLowerCase().includes(student.full_name.toLowerCase());
+
+    if (!nameMatches) {
+      return {
+        success: false,
+        error: `The name "${leaderName}" does not match the registered leader name for ID "${leaderStudentId}".`,
+      };
+    }
+
+    // Find active leader membership
+    const leaderMem = db.memberships.find(
+      (m) => m.student_id === student.id && m.role === "LEADER" && m.status === "ACTIVE"
+    );
+
+    if (!leaderMem) {
+      return {
+        success: false,
+        error: `Student "${student.full_name}" is not registered as the Team Leader of any active team.`,
+      };
+    }
+
+    const team = await this.getTeamById(leaderMem.team_id, true);
+    if (!team) {
+      return { success: false, error: "Associated team could not be loaded." };
+    }
+
+    return {
+      success: true,
+      team,
+      leaderStudent: student,
+      leaderMembership: leaderMem,
+    };
+  }
+
+  // -------------------------------------------------------------
+  // TEAM SLIDES & FILE UPLOAD
+  // -------------------------------------------------------------
+  static async updateTeamSlides(
+    teamId: string,
+    data: { slide_link?: string; slide_file_name?: string; slide_file_url?: string }
+  ): Promise<Team> {
+    const team = db.teams.find((t) => t.id === teamId);
+    if (!team) throw new Error("Team not found");
+
+    if (data.slide_link !== undefined) team.slide_link = data.slide_link.trim() || null;
+    if (data.slide_file_name !== undefined) team.slide_file_name = data.slide_file_name || null;
+    if (data.slide_file_url !== undefined) team.slide_file_url = data.slide_file_url || null;
+    team.updated_at = new Date().toISOString();
+
+    return (await this.getTeamById(teamId, true))!;
+  }
+
+  static async updateTeamName(teamId: string, newName: string): Promise<Team> {
+    const team = db.teams.find((t) => t.id === teamId);
+    if (!team) throw new Error("Team not found");
+
+    const trimmed = newName.trim();
+    if (!trimmed) throw new Error("Team name cannot be empty");
+
+    const duplicate = db.teams.some(
+      (t) =>
+        t.id !== teamId &&
+        t.course_offering_id === team.course_offering_id &&
+        t.team_name.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (duplicate) {
+      throw new Error(`Another team named "${trimmed}" already exists in this section.`);
+    }
+
+    team.team_name = trimmed;
+    team.updated_at = new Date().toISOString();
+    return (await this.getTeamById(teamId, true))!;
+  }
+
+  static async toggleTeamStatus(teamId: string, newStatus: "OPEN" | "CLOSED"): Promise<Team> {
+    const team = db.teams.find((t) => t.id === teamId);
+    if (!team) throw new Error("Team not found");
+
+    const activeMembers = db.memberships.filter(
+      (m) => m.team_id === team.id && m.status === "ACTIVE"
+    );
+
+    if (newStatus === "OPEN" && activeMembers.length >= team.capacity) {
+      throw new Error("Cannot open registration: team is already at full capacity.");
+    }
+
+    team.status = newStatus;
+    team.updated_at = new Date().toISOString();
+    return (await this.getTeamById(teamId, true))!;
+  }
+
+  // -------------------------------------------------------------
+  // JOIN REQUESTS WORKFLOW
+  // -------------------------------------------------------------
+  static async requestJoinTeam(payload: {
+    teamId: string;
+    studentName: string;
+    studentId: string;
+  }): Promise<JoinTeamResult> {
+    const team = db.teams.find((t) => t.id === payload.teamId);
+    if (!team) throw new Error("Team not found");
+
+    const offering = db.offerings.find((o) => o.id === team.course_offering_id);
+    if (!offering || offering.registration_status !== "OPEN") {
+      throw new Error("Registration for this course is currently closed.");
+    }
+
+    if (team.status === "CLOSED") {
+      throw new Error("This team is currently closed for new member requests.");
+    }
+
+    const activeMembers = db.memberships.filter(
+      (m) => m.team_id === team.id && m.status === "ACTIVE"
+    );
+    if (activeMembers.length >= team.capacity) {
+      throw new Error("This team is already at full capacity.");
+    }
+
+    const normId = normalizeStudentId(payload.studentId);
+    if (!normId) throw new Error("A valid Student ID is required.");
+
+    // Check if student already registered in an ACTIVE team in this offering
+    const student = db.students.find((s) => s.normalized_student_id === normId);
+    if (student) {
+      const alreadyRegistered = db.memberships.some(
+        (m) =>
+          m.student_id === student.id &&
+          m.course_offering_id === team.course_offering_id &&
+          m.status === "ACTIVE"
+      );
+      if (alreadyRegistered) {
+        throw new Error(
+          `Student with ID ${payload.studentId} is already registered in a team for this course.`
+        );
+      }
+    }
+
+    // Check if already has a pending join request for this course offering
+    const existingReq = db.joinRequests.find(
+      (r) =>
+        r.student_id === payload.studentId.trim() &&
+        r.course_offering_id === team.course_offering_id &&
+        r.status === "PENDING"
+    );
+    if (existingReq) {
+      throw new Error(
+        `You already have a pending join request for this course. Please wait for the leader to respond.`
+      );
+    }
+
+    const reqId = `req-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const joinReq: TeamJoinRequest = {
+      id: reqId,
+      team_id: team.id,
+      course_offering_id: team.course_offering_id,
+      student_name: payload.studentName.trim(),
+      student_id: payload.studentId.trim(),
+      status: "PENDING",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    db.joinRequests.push(joinReq);
+
+    return {
+      success: true,
+      teamId: team.id,
+      teamName: team.team_name,
+      message: `Join request submitted! The team leader (${team.team_name}) can now review and accept your request.`,
+    };
+  }
+
+  static async handleJoinRequest(
+    requestId: string,
+    action: "ACCEPT" | "REJECT"
+  ): Promise<{ success: boolean; message: string }> {
+    const req = db.joinRequests.find((r) => r.id === requestId);
+    if (!req) throw new Error("Join request not found");
+    if (req.status !== "PENDING") {
+      throw new Error(`Request has already been ${req.status.toLowerCase()}.`);
+    }
+
+    const team = db.teams.find((t) => t.id === req.team_id);
+    if (!team) throw new Error("Associated team not found");
+
+    if (action === "REJECT") {
+      req.status = "REJECTED";
+      req.updated_at = new Date().toISOString();
+      return { success: true, message: `Request from ${req.student_name} was rejected.` };
+    }
+
+    // Action is ACCEPT:
+    const activeMembers = db.memberships.filter(
+      (m) => m.team_id === team.id && m.status === "ACTIVE"
+    );
+    if (activeMembers.length >= team.capacity) {
+      throw new Error("Cannot accept: Team is already at full capacity.");
+    }
+
+    const normId = normalizeStudentId(req.student_id);
+    let student = db.students.find((s) => s.normalized_student_id === normId);
+    if (!student) {
+      student = {
+        id: `stu-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        full_name: req.student_name,
+        student_id: req.student_id,
+        normalized_student_id: normId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      db.students.push(student);
+    }
+
+    // Check not already active in another team for this offering
+    const alreadyRegistered = db.memberships.some(
+      (m) =>
+        m.student_id === student!.id &&
+        m.course_offering_id === req.course_offering_id &&
+        m.status === "ACTIVE"
+    );
+    if (alreadyRegistered) {
+      req.status = "REJECTED";
+      req.updated_at = new Date().toISOString();
+      throw new Error(
+        `Student ${req.student_name} (${req.student_id}) is already registered in another team for this course.`
+      );
+    }
+
+    // Create active membership
+    const memId = `mem-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    db.memberships.push({
+      id: memId,
+      team_id: team.id,
+      student_id: student.id,
+      course_offering_id: req.course_offering_id,
+      role: "MEMBER",
+      status: "ACTIVE",
+      joined_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+
+    req.status = "ACCEPTED";
+    req.updated_at = new Date().toISOString();
+
+    // Check if team is now full
+    const newActiveCount = activeMembers.length + 1;
+    if (newActiveCount >= team.capacity) {
+      team.status = "FULL";
+    }
+    team.updated_at = new Date().toISOString();
+
+    return {
+      success: true,
+      message: `${req.student_name} (${req.student_id}) has been accepted into ${team.team_name}!`,
     };
   }
 
@@ -481,9 +1037,18 @@ export class DataService {
       const membershipId = `mem-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const initialStatus = payload.capacity <= 1 ? "FULL" : "OPEN";
 
+      const takenNums = new Set(
+        db.teams
+          .filter((t) => t.course_offering_id === payload.courseOfferingId)
+          .map((t) => t.presentation_number)
+      );
+      let nextNum = 1;
+      while (takenNums.has(nextNum)) nextNum++;
+
       const newTeam: Team = {
         id: teamId,
         course_offering_id: payload.courseOfferingId,
+        presentation_number: nextNum,
         team_name: payload.teamName.trim(),
         capacity: payload.capacity,
         leader_membership_id: membershipId,
@@ -541,6 +1106,7 @@ export class DataService {
         success: true,
         teamId,
         teamName: newTeam.team_name,
+        presentationNumber: nextNum,
         membershipId,
         teamManagementToken,
         membershipToken,

@@ -9,19 +9,22 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 interface Props {
-  params: { slug: string };
-  searchParams: { section?: string };
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ section?: string }>;
 }
 
 export async function generateMetadata({ params }: Props) {
-  const course = await DataService.getCourseBySlug(params.slug);
+  const { slug } = await params;
+  const course = await DataService.getCourseBySlug(slug);
   return {
     title: `Create Team — ${course ? course.code : "Course"} | PGMS DIU`,
   };
 }
 
 export default async function CreateTeamPage({ params, searchParams }: Props) {
-  const course = await DataService.getCourseBySlug(params.slug);
+  const { slug } = await params;
+  const resolvedSearchParams = await searchParams;
+  const course = await DataService.getCourseBySlug(slug);
   if (!course) {
     notFound();
   }
@@ -32,9 +35,9 @@ export default async function CreateTeamPage({ params, searchParams }: Props) {
   }
 
   let offering = offerings[0];
-  if (searchParams.section) {
+  if (resolvedSearchParams.section) {
     const match = offerings.find(
-      (o) => o.section.toLowerCase() === searchParams.section?.toLowerCase()
+      (o) => o.section.toLowerCase() === resolvedSearchParams.section?.toLowerCase()
     );
     if (match) offering = match;
   }

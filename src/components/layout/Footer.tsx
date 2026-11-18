@@ -55,12 +55,17 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/manage" className="hover:text-white transition-colors">
-                  Manage Registration
+                  Team Login
                 </Link>
               </li>
               <li>
-                <Link href="/#how-it-works" className="hover:text-white transition-colors">
-                  How It Works
+                <Link href="/register-team" className="hover:text-white transition-colors">
+                  Register Team
+                </Link>
+              </li>
+              <li>
+                <Link href="/superadmin/login" className="hover:text-emerald-400 text-slate-400 transition-colors">
+                  Superadmin Portal
                 </Link>
               </li>
             </ul>

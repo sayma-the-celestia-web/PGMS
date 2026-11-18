@@ -1,5 +1,13 @@
 import { z } from "zod";
 
+export const studentIdSchema = z
+  .string()
+  .trim()
+  .regex(
+    /^\d{3}-\d{2}-\d{3}$/,
+    "Student ID must match pattern 252-35-242 (e.g. 252-35-242)"
+  );
+
 export const createTeamSchema = z.object({
   courseOfferingId: z.string().min(1, "Invalid course offering selected"),
   teamName: z
@@ -10,22 +18,35 @@ export const createTeamSchema = z.object({
   capacity: z
     .number({ invalid_type_error: "Capacity must be a number" })
     .int("Capacity must be an integer")
-    .min(1, "Capacity must be at least 1")
-    .max(20, "Capacity cannot exceed 20"),
+  .min(1, "Capacity must be at least 1")
+  .max(20, "Capacity cannot exceed 20"),
   leaderName: z
     .string()
     .trim()
     .min(2, "Leader name must be at least 2 characters")
     .max(100, "Leader name must not exceed 100 characters"),
-  leaderStudentId: z
-    .string()
-    .trim()
-    .min(3, "Student ID must be at least 3 characters")
-    .max(30, "Student ID must not exceed 30 characters")
-    .regex(
-      /^[a-zA-Z0-9\-_]+$/,
-      "Student ID should contain only alphanumeric characters, dashes, or underscores"
-    ),
+  leaderStudentId: studentIdSchema,
+});
+
+export const multiStepRegisterTeamSchema = z.object({
+  courseOfferingId: z.string().min(1, "Invalid course offering selected"),
+  teamName: z.string().trim().max(60, "Team name must not exceed 60 characters").optional().default(""),
+  capacity: z.coerce.number().int().min(1, "Team size must be at least 1").max(20, "Max team size is 20"),
+  topic: z.string().trim().max(150, "Topic must not exceed 150 characters").optional().default(""),
+  presentation_number: z.coerce.number().int().min(1, "Presentation team number must be at least 1"),
+  leaderName: z.string().trim().min(2, "Leader name must be at least 2 characters"),
+  leaderStudentId: studentIdSchema,
+  members: z.array(
+    z.object({
+      name: z.string().trim().min(2, "Member name must be at least 2 characters"),
+      studentId: studentIdSchema,
+    })
+  ).default([]),
+});
+
+export const leaderLoginSchema = z.object({
+  leaderName: z.string().trim().min(2, "Leader name must be at least 2 characters"),
+  leaderStudentId: studentIdSchema,
 });
 
 export const joinTeamSchema = z.object({
@@ -35,15 +56,7 @@ export const joinTeamSchema = z.object({
     .trim()
     .min(2, "Full name must be at least 2 characters")
     .max(100, "Full name must not exceed 100 characters"),
-  studentId: z
-    .string()
-    .trim()
-    .min(3, "Student ID must be at least 3 characters")
-    .max(30, "Student ID must not exceed 30 characters")
-    .regex(
-      /^[a-zA-Z0-9\-_]+$/,
-      "Student ID should contain only alphanumeric characters, dashes, or underscores"
-    ),
+  studentId: studentIdSchema,
 });
 
 export const tokenQuerySchema = z.object({
@@ -68,6 +81,12 @@ export const updateTeamSettingsSchema = z.object({
     .max(20, "Capacity cannot exceed 20")
     .optional(),
   status: z.enum(["OPEN", "CLOSED"]).optional(),
+});
+
+export const updateTeamSlideSchema = z.object({
+  slideLink: z.string().trim().optional(),
+  slideFileName: z.string().trim().optional(),
+  slideFileUrl: z.string().trim().optional(),
 });
 
 export const transferLeadershipSchema = z.object({
@@ -106,6 +125,8 @@ export const courseOfferingBaseSchema = z.object({
   registration_deadline: z.string().min(10, "Registration deadline is required"),
   min_team_capacity: z.coerce.number().int().min(1, "Min capacity must be at least 1"),
   max_team_capacity: z.coerce.number().int().min(1, "Max capacity must be at least 1"),
+  max_teams_limit: z.coerce.number().int().min(1, "Max teams limit must be at least 1").default(20),
+  topic_enabled: z.boolean().default(true),
 });
 
 export const courseOfferingFormSchema = courseOfferingBaseSchema.refine(

@@ -297,6 +297,18 @@ export function CourseDetailsClient({
                   <CardHeader className="pb-3 border-b border-slate-100 bg-slate-50/50">
                     <div className="flex justify-between items-start gap-2">
                       <div>
+                        {team.presentation_number && (
+                          <span className="inline-block px-2 py-0.5 rounded bg-blue-100 text-diu-blue text-[10px] font-bold uppercase tracking-wider mb-1">
+                            {team.presentation_number === 1
+                              ? "1st Team"
+                              : team.presentation_number === 2
+                              ? "2nd Team"
+                              : team.presentation_number === 3
+                              ? "3rd Team"
+                              : `${team.presentation_number}th Team`}{" "}
+                            (Slot #{team.presentation_number})
+                          </span>
+                        )}
                         <CardTitle className="text-lg text-diu-navy">
                           {team.team_name}
                         </CardTitle>
@@ -309,6 +321,11 @@ export function CourseDetailsClient({
                             </strong>
                           </span>
                         </div>
+                        {team.topic && (
+                          <p className="text-[11px] text-slate-500 italic mt-1 line-clamp-1">
+                            Topic: {team.topic}
+                          </p>
+                        )}
                       </div>
                       <TeamStatusBadge status={team.status} />
                     </div>
@@ -397,7 +414,7 @@ export function CourseDetailsClient({
                           className="w-full text-xs font-semibold gap-1.5"
                         >
                           <UserPlus className="w-4 h-4" />
-                          Join This Team ({availableSlots} slot{availableSlots > 1 ? "s" : ""} left)
+                          Request to Join Team ({availableSlots} slot{availableSlots > 1 ? "s" : ""} left)
                         </Button>
                       </Link>
                     ) : team.status === "FULL" ? (

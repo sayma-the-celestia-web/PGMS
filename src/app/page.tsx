@@ -17,6 +17,7 @@ import {
   FileSpreadsheet,
   GraduationCap,
   KeyRound,
+  UserPlus,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -56,26 +57,27 @@ export default async function HomePage() {
 
             {/* CTA Buttons */}
             <div className="pt-2 flex flex-wrap gap-4 items-center">
-              <Link href="/courses">
+              <Link href="/register-team">
                 <Button
                   size="lg"
                   className="bg-white text-diu-navy hover:bg-blue-50 font-semibold shadow-lg shadow-black/15 gap-2 h-12 px-6"
                 >
-                  <BookOpen className="w-5 h-5 text-diu-blue" />
-                  Explore Courses
+                  <UserPlus className="w-5 h-5 text-diu-blue" />
+                  Register Team
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
 
-              <a href="#how-it-works">
+              <Link href="/courses">
                 <Button
                   variant="outline"
                   size="lg"
-                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 h-12 px-6 font-medium backdrop-blur-sm"
+                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 h-12 px-6 font-medium backdrop-blur-sm gap-2"
                 >
-                  How It Works
+                  <BookOpen className="w-4 h-4" />
+                  Browse Courses
                 </Button>
-              </a>
+              </Link>
 
               <Link href="/manage">
                 <Button
@@ -84,7 +86,7 @@ export default async function HomePage() {
                   className="text-white/90 hover:text-white hover:bg-white/10 h-12 px-4 gap-2 text-sm"
                 >
                   <KeyRound className="w-4 h-4 text-emerald-300" />
-                  Manage Existing Team
+                  Team Login
                 </Button>
               </Link>
             </div>

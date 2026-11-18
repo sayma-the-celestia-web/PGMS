@@ -2,12 +2,12 @@
 
 import React, { useState } from "react";
 import { Course } from "@/types";
-import { createCourseAction } from "@/lib/actions";
+import { createCourseAction, deleteCourseAction } from "@/lib/actions";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, BookOpen, AlertTriangle } from "lucide-react";
+import { PlusCircle, BookOpen, AlertTriangle, Trash2 } from "lucide-react";
 
 interface Props {
   initialCourses: Course[];
@@ -60,6 +60,23 @@ export function CoursesClient({ initialCourses }: Props) {
       setError(err?.message || "Failed to create course");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteCourse = async (courseId: string, courseCode: string) => {
+    if (!confirm(`Are you sure you want to remove ${courseCode}? This will remove all associated section offerings and registrations.`)) {
+      return;
+    }
+    setError(null);
+    try {
+      const res = await deleteCourseAction(courseId);
+      if (res.success) {
+        setCourses(courses.filter((c) => c.id !== courseId));
+      } else {
+        setError("Failed to remove course.");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to remove course.");
     }
   };
 
@@ -167,28 +184,43 @@ export function CoursesClient({ initialCourses }: Props) {
       )}
 
       <Card className="border border-slate-200 shadow-sm bg-white overflow-hidden">
-        <table className="w-full text-xs text-left">
-          <thead className="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
-            <tr>
-              <th className="p-3.5">Course Code</th>
-              <th className="p-3.5">Course Name</th>
-              <th className="p-3.5">Slug</th>
-              <th className="p-3.5">Description</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {courses.map((course) => (
-              <tr key={course.id} className="hover:bg-slate-50 transition-colors">
-                <td className="p-3.5 font-bold text-diu-navy font-mono">{course.code}</td>
-                <td className="p-3.5 font-medium text-slate-800">{course.name}</td>
-                <td className="p-3.5 text-slate-500 font-mono">{course.slug}</td>
-                <td className="p-3.5 text-slate-500 max-w-xs truncate">
-                  {course.description || "N/A"}
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left">
+            <thead className="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
+              <tr>
+                <th className="p-3.5">Course Code</th>
+                <th className="p-3.5">Course Name</th>
+                <th className="p-3.5">Slug</th>
+                <th className="p-3.5">Description</th>
+                <th className="p-3.5 text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {courses.map((course) => (
+                <tr key={course.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="p-3.5 font-bold text-diu-navy font-mono">{course.code}</td>
+                  <td className="p-3.5 font-medium text-slate-800">{course.name}</td>
+                  <td className="p-3.5 text-slate-500 font-mono">{course.slug}</td>
+                  <td className="p-3.5 text-slate-500 max-w-xs truncate">
+                    {course.description || "N/A"}
+                  </td>
+                  <td className="p-3.5 text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteCourse(course.id, course.code)}
+                      className="text-red-600 border-red-200 hover:bg-red-50 text-xs h-7 px-2.5 gap-1"
+                      title="Remove Course"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Remove
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
     </div>
   );

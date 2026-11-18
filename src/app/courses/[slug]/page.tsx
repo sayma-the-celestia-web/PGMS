@@ -8,12 +8,13 @@ import { ArrowLeft, BookOpen } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 interface Props {
-  params: { slug: string };
-  searchParams: { section?: string };
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ section?: string }>;
 }
 
 export async function generateMetadata({ params }: Props) {
-  const course = await DataService.getCourseBySlug(params.slug);
+  const { slug } = await params;
+  const course = await DataService.getCourseBySlug(slug);
   if (!course) return { title: "Course Details | PGMS DIU" };
   return {
     title: `${course.code} - ${course.name} | PGMS DIU`,
@@ -22,7 +23,9 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function CourseDetailPage({ params, searchParams }: Props) {
-  const course = await DataService.getCourseBySlug(params.slug);
+  const { slug } = await params;
+  const resolvedSearchParams = await searchParams;
+  const course = await DataService.getCourseBySlug(slug);
   if (!course) {
     notFound();
   }
@@ -48,9 +51,9 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
 
   // Determine which section offering to display
   let currentOffering = allOfferings[0];
-  if (searchParams.section) {
+  if (resolvedSearchParams.section) {
     const match = allOfferings.find(
-      (o) => o.section.toLowerCase() === searchParams.section?.toLowerCase()
+      (o) => o.section.toLowerCase() === resolvedSearchParams.section?.toLowerCase()
     );
     if (match) currentOffering = match;
   }

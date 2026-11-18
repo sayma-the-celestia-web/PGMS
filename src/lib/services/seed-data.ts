@@ -23,8 +23,19 @@ export const DEPARTMENT_CONFIG = {
   university: "Daffodil International University",
 } as const;
 
-// No pre-configured semesters — Superadmin must create a semester first.
-export const initialSemesters: Semester[] = [];
+// Initial active semester for immediate demonstration & operation
+export const initialSemesters: Semester[] = [
+  {
+    id: "sem-spring-2026",
+    name: "Spring 2026",
+    academic_year: "2026",
+    start_date: "2026-01-10",
+    end_date: "2026-06-30",
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+];
 
 // One real course: SE214 — Algorithm Design and Analysis
 export const initialCourses: Course[] = [
@@ -40,9 +51,24 @@ export const initialCourses: Course[] = [
   },
 ];
 
-// No pre-configured offering — requires a semester to be created by the Superadmin first.
-// Superadmin must configure: semester, registration dates, team capacity, then open registration.
-export const initialOfferings: CourseOffering[] = [];
+// Active course offering for SE214 Section H
+export const initialOfferings: CourseOffering[] = [
+  {
+    id: "offering-se214-h",
+    course_id: "crs-se214",
+    semester_id: "sem-spring-2026",
+    section: "H",
+    registration_status: "OPEN",
+    registration_start: "2026-01-01T00:00:00.000Z",
+    registration_deadline: "2026-12-31T23:59:59.000Z",
+    min_team_capacity: 2,
+    max_team_capacity: 5,
+    max_teams_limit: 20,
+    topic_enabled: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+];
 
 // No demo students, teams, memberships or credentials.
 export const initialStudents: Student[] = [];

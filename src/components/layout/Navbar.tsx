@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GraduationCap, KeyRound, BookOpen, Menu, X, Shield } from "lucide-react";
+import { GraduationCap, KeyRound, BookOpen, Menu, X, Shield, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function Navbar() {
@@ -18,8 +18,8 @@ export function Navbar() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/courses", label: "Courses & Teams" },
-    { href: "/#how-it-works", label: "How It Works" },
-    { href: "/manage", label: "Manage My Team", icon: KeyRound },
+    { href: "/register-team", label: "Register Team", icon: UserPlus },
+    { href: "/manage", label: "Team Login", icon: KeyRound },
   ];
 
   return (
@@ -82,11 +82,17 @@ export function Navbar() {
         </nav>
 
         {/* Action button */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-2.5">
           <Link href="/courses">
-            <Button variant="default" size="sm" className="gap-2 shadow-sm font-medium">
-              <BookOpen className="w-4 h-4" />
-              Browse Courses
+            <Button variant="outline" size="sm" className="gap-1.5 font-medium text-xs">
+              <BookOpen className="w-3.5 h-3.5" />
+              Courses
+            </Button>
+          </Link>
+          <Link href="/register-team">
+            <Button variant="default" size="sm" className="gap-1.5 shadow-sm font-semibold text-xs bg-diu-blue hover:bg-diu-navy">
+              <UserPlus className="w-3.5 h-3.5" />
+              Register Team
             </Button>
           </Link>
         </div>
@@ -118,8 +124,16 @@ export function Navbar() {
             </Link>
           ))}
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
+            <Link href="/register-team" onClick={() => setMobileMenuOpen(false)}>
+              <Button className="w-full bg-diu-blue hover:bg-diu-navy font-semibold text-xs gap-1.5">
+                <UserPlus className="w-3.5 h-3.5" />
+                Register New Team
+              </Button>
+            </Link>
             <Link href="/courses" onClick={() => setMobileMenuOpen(false)}>
-              <Button className="w-full">Browse Courses</Button>
+              <Button variant="outline" className="w-full text-xs">
+                Browse Courses
+              </Button>
             </Link>
           </div>
         </div>

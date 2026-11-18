@@ -12,9 +12,10 @@ export const metadata = {
 };
 
 export default async function CoursesPage() {
-  const [offerings, semesters] = await Promise.all([
+  const [offerings, semesters, allTeams] = await Promise.all([
     DataService.getCourseOfferings(),
     DataService.getSemesters(),
+    DataService.getAllTeams(),
   ]);
 
   return (
@@ -27,18 +28,18 @@ export default async function CoursesPage() {
             <span>DIU SWE • Academic Registration</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-diu-navy font-heading">
-            Course Offerings Directory
+            Course Offerings &amp; Teams Directory
           </h1>
           <p className="text-sm sm:text-base text-diu-slate max-w-2xl">
-            Select your course and enrolled section to create a new presentation group or join an
-            existing open team.
+            Browse course offerings, find teams looking for members, or register a new presentation group.
           </p>
         </div>
 
-        {/* Directory Client with Interactive Filters */}
+        {/* Directory Client with Interactive Filters and Find & Join Open Teams */}
         <CourseDirectoryClient
           initialOfferings={offerings}
           semesters={semesters}
+          initialTeams={allTeams}
         />
       </div>
     </div>
