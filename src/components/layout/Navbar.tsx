@@ -132,7 +132,7 @@ export function Navbar() {
             </Link>
             <Link href="/courses" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="outline" className="w-full text-xs">
-                Browse Courses
+                Find Team
               </Button>
             </Link>
           </div>

@@ -50,7 +50,7 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/courses" className="hover:text-white transition-colors">
-                  Explore Courses
+                  Explore Teams
                 </Link>
               </li>
               <li>

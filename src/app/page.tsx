@@ -74,8 +74,8 @@ export default async function HomePage() {
                   size="lg"
                   className="border-white/30 bg-white/10 text-white hover:bg-white/20 h-12 px-6 font-medium backdrop-blur-sm gap-2"
                 >
-                  <BookOpen className="w-4 h-4" />
-                  Browse Courses
+                  <Users className="w-4 h-4" />
+                  Find Team
                 </Button>
               </Link>
 
@@ -490,16 +490,17 @@ export default async function HomePage() {
                 size="lg"
                 className="bg-white text-diu-navy hover:bg-blue-50 font-semibold shadow-md gap-2"
               >
-                <BookOpen className="w-4 h-4 text-diu-blue" />
-                Explore Available Courses
+                <Users className="w-4 h-4 text-diu-blue" />
+                Explore Team
               </Button>
             </Link>
             <Link href="/manage">
               <Button
-                variant="outline"
                 size="lg"
-                className="border-white/40 text-white hover:bg-white/10"
+                className="bg-white text-black hover:bg-slate-100 hover:text-black border border-white font-semibold shadow-md gap-2"
+                style={{ color: "#000000" }}
               >
+                <KeyRound className="w-4 h-4 text-black" />
                 Access My Team Reference
               </Button>
             </Link>
