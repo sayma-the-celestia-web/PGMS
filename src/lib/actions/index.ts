@@ -273,6 +273,18 @@ export async function adminRemoveMemberAction(
   }
 }
 
+export async function adminDeleteTeamAction(teamId: string) {
+  try {
+    const result = await DataService.deleteTeam(teamId);
+    revalidatePath("/superadmin/teams");
+    revalidatePath("/superadmin");
+    revalidatePath("/courses");
+    return { success: true, data: result };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "Failed to delete team" };
+  }
+}
+
 export async function adminUpdateStudentAction(
   studentId: string,
   updates: { full_name?: string; student_id?: string }

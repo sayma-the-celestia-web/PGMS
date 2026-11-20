@@ -35,6 +35,7 @@ import {
   UploadCloud,
   FileText,
 } from "lucide-react";
+import { formatStudentId } from "@/lib/utils";
 
 interface Props {
   offerings: CourseOffering[];
@@ -167,22 +168,27 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
     e.preventDefault();
     setErrorMessage(null);
 
+    // Auto-format leader ID
+    const formattedLeaderId = formatStudentId(leaderId);
+    setLeaderId(formattedLeaderId);
+
     // Leader validation
     if (!leaderName.trim()) {
       setErrorMessage("Team Leader Name is required.");
       return;
     }
-    if (!idRegex.test(leaderId.trim())) {
+    if (!idRegex.test(formattedLeaderId)) {
       setErrorMessage(
-        "Leader Student ID must follow the pattern 252-35-242 (e.g. 252-35-242)."
+        "Leader Student ID must follow DIU pattern: XXX-XX-XXX (e.g. 252-35-242)."
       );
       return;
     }
 
     const seenIds = new Set<string>();
-    seenIds.add(leaderId.trim());
+    seenIds.add(formattedLeaderId);
 
     // Validate filled members
+    const updatedMembers = [...members];
     for (let i = 0; i < members.length; i++) {
       const m = members[i];
       if (m.name.trim() || m.studentId.trim()) {
@@ -190,21 +196,24 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
           setErrorMessage(`Member #${i + 2} name is required.`);
           return;
         }
-        if (!idRegex.test(m.studentId.trim())) {
+        const formattedMemId = formatStudentId(m.studentId);
+        updatedMembers[i] = { ...m, studentId: formattedMemId };
+        if (!idRegex.test(formattedMemId)) {
           setErrorMessage(
-            `Member #${i + 2} ID "${m.studentId}" must follow the pattern 252-35-242 (e.g. 252-35-242).`
+            `Member #${i + 2} ID must follow DIU pattern: XXX-XX-XXX (e.g. 252-35-242).`
           );
           return;
         }
-        if (seenIds.has(m.studentId.trim())) {
+        if (seenIds.has(formattedMemId)) {
           setErrorMessage(
-            `Duplicate Student ID detected: ${m.studentId.trim()}. Each student must have a unique ID.`
+            `Duplicate Student ID detected: ${formattedMemId}. Each student must have a unique ID.`
           );
           return;
         }
-        seenIds.add(m.studentId.trim());
+        seenIds.add(formattedMemId);
       }
     }
+    setMembers(updatedMembers);
 
     setStep(3);
   };
@@ -215,10 +224,14 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
     setSubmitting(true);
 
     try {
+      const formattedLeaderId = formatStudentId(leaderId);
       // Filter only members with name and ID filled
       const activeMembers = members
         .filter((m) => m.name.trim() && m.studentId.trim())
-        .map((m) => ({ name: m.name.trim(), studentId: m.studentId.trim() }));
+        .map((m) => ({
+          name: m.name.trim(),
+          studentId: formatStudentId(m.studentId),
+        }));
 
       const res = await registerTeamMultiStepAction({
         courseOfferingId: selectedOffering.id,
@@ -227,7 +240,7 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
         topic: teamTopic.trim() || undefined,
         presentation_number: Number(presentationNumber),
         leaderName: leaderName.trim(),
-        leaderStudentId: leaderId.trim(),
+        leaderStudentId: formattedLeaderId,
         members: activeMembers,
       });
 
@@ -608,8 +621,7 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
               Step 2: Team Leader &amp; Members
             </CardTitle>
             <CardDescription className="text-xs">
-              Provide student names and student IDs following pattern{" "}
-              <strong className="text-diu-navy font-mono">252-35-242</strong>.
+              Provide student names and student IDs.
             </CardDescription>
           </CardHeader>
 
@@ -640,20 +652,23 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
 
                   <div className="space-y-1">
                     <Label htmlFor="leaderId" className="text-xs font-medium text-slate-700">
-                      Leader ID * (Pattern: 252-35-242)
+                      Leader ID *
                     </Label>
                     <Input
                       id="leaderId"
                       type="text"
-                      placeholder="252-35-242"
+                      placeholder="e.g. 252-35-242"
                       value={leaderId}
                       onChange={(e) => setLeaderId(e.target.value)}
+                      onBlur={() => {
+                        if (leaderId) setLeaderId(formatStudentId(leaderId));
+                      }}
                       required
                       className="text-xs bg-white font-mono"
                     />
-                    {leaderId && !idRegex.test(leaderId.trim()) && (
-                      <p className="text-[10px] text-amber-600 font-medium">
-                        Must match format 252-35-242
+                    {leaderId && !idRegex.test(formatStudentId(leaderId)) && (
+                      <p className="text-[11px] text-red-600 font-medium mt-1">
+                        ID must follow DIU pattern: XXX-XX-XXX (e.g. 252-35-242)
                       </p>
                     )}
                   </div>
@@ -692,18 +707,23 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
 
                       <div className="space-y-1">
                         <Label className="text-[11px] text-slate-600 font-medium">
-                          Member #{idx + 2} ID (252-35-242)
+                          Member #{idx + 2} ID
                         </Label>
                         <Input
                           type="text"
-                          placeholder="252-35-242"
+                          placeholder="e.g. 252-35-242"
                           value={mem.studentId}
                           onChange={(e) => updateMember(idx, "studentId", e.target.value)}
+                          onBlur={() => {
+                            if (mem.studentId) {
+                              updateMember(idx, "studentId", formatStudentId(mem.studentId));
+                            }
+                          }}
                           className="text-xs bg-white font-mono"
                         />
-                        {mem.studentId && !idRegex.test(mem.studentId.trim()) && (
-                          <p className="text-[10px] text-amber-600 font-medium">
-                            Must match format 252-35-242
+                        {mem.studentId && !idRegex.test(formatStudentId(mem.studentId)) && (
+                          <p className="text-[11px] text-red-600 font-medium mt-1">
+                            ID must follow DIU pattern: XXX-XX-XXX (e.g. 252-35-242)
                           </p>
                         )}
                       </div>
@@ -775,7 +795,7 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                       disabled={slot.isTaken}
                       className={slot.isTaken ? "text-slate-400 bg-slate-100" : "text-slate-800"}
                     >
-                      {slot.label} {slot.isTaken ? `(Unavailable — Taken by ${slot.takenByTeam})` : "✓ Available"}
+                      {slot.label} {slot.isTaken ? `(Unavailable — Taken by ${slot.takenByTeam})` : ""}
                     </option>
                   ))}
                 </select>

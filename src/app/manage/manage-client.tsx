@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TeamStatusBadge } from "@/components/ui/status-badge";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatStudentId } from "@/lib/utils";
 import {
   KeyRound,
   ShieldCheck,
@@ -85,14 +85,16 @@ export function ManageClient() {
       setLoginError("Please enter your Leader Full Name.");
       return;
     }
-    if (!idRegex.test(leaderId.trim())) {
-      setLoginError("Student ID must match format 252-35-242 (e.g. 252-35-242).");
+    const formattedId = formatStudentId(leaderId);
+    setLeaderId(formattedId);
+    if (!idRegex.test(formattedId)) {
+      setLoginError("Student ID must follow DIU pattern: XXX-XX-XXX (e.g. 252-35-242).");
       return;
     }
 
     setLoginLoading(true);
     try {
-      const res = await leaderLoginAction(leaderName.trim(), leaderId.trim());
+      const res = await leaderLoginAction(leaderName.trim(), formattedId);
       if (!res.success || !res.team) {
         setLoginError(res.error || "Login credentials not recognized.");
       } else {
@@ -253,7 +255,7 @@ export function ManageClient() {
               Team Login
             </CardTitle>
             <CardDescription className="text-xs text-blue-100/90 leading-relaxed">
-              Login with your Team Leader Name &amp; Student ID (252-35-242) to manage team members, slide links, and join requests.
+              Login with your Team Leader Name &amp; Student ID to manage team members, slide links, and join requests.
             </CardDescription>
           </CardHeader>
 
@@ -283,20 +285,25 @@ export function ManageClient() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="leadId" className="text-xs font-semibold text-slate-700">
-                  Leader Student ID * (Pattern: 252-35-242)
+                  Leader Student ID *
                 </Label>
                 <Input
                   id="leadId"
                   type="text"
-                  placeholder="252-35-242"
+                  placeholder="e.g. 252-35-242"
                   value={leaderId}
                   onChange={(e) => setLeaderId(e.target.value)}
+                  onBlur={() => {
+                    if (leaderId) setLeaderId(formatStudentId(leaderId));
+                  }}
                   required
                   className="text-xs font-mono"
                 />
-                <p className="text-[11px] text-slate-400">
-                  Must strictly follow the pattern: 252-35-242
-                </p>
+                {leaderId && !idRegex.test(formatStudentId(leaderId)) && (
+                  <p className="text-[11px] text-red-600 font-medium mt-1">
+                    ID must follow DIU pattern: XXX-XX-XXX (e.g. 252-35-242)
+                  </p>
+                )}
               </div>
             </CardContent>
 

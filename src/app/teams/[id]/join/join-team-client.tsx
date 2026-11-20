@@ -26,6 +26,7 @@ import {
   Clock,
   Sparkles,
 } from "lucide-react";
+import { formatStudentId } from "@/lib/utils";
 
 interface Props {
   team: Team;
@@ -55,8 +56,11 @@ export function JoinTeamClient({ team }: Props) {
       return;
     }
 
-    if (!idRegex.test(studentId.trim())) {
-      setError("Student ID must match the pattern 252-35-242 (e.g. 252-35-242).");
+    const formattedId = formatStudentId(studentId);
+    setStudentId(formattedId);
+
+    if (!idRegex.test(formattedId)) {
+      setError("Student ID must follow DIU pattern: XXX-XX-XXX (e.g. 252-35-242).");
       return;
     }
 
@@ -66,7 +70,7 @@ export function JoinTeamClient({ team }: Props) {
       const res = await requestJoinTeamAction({
         teamId: team.id,
         studentName: fullName.trim(),
-        studentId: studentId.trim(),
+        studentId: formattedId,
       });
 
       if (!res.success || !res.data) {
@@ -220,20 +224,25 @@ export function JoinTeamClient({ team }: Props) {
 
               <div className="space-y-1.5">
                 <Label htmlFor="id" className="text-xs font-semibold text-slate-700">
-                  Student ID * (Pattern: 252-35-242)
+                  Student ID *
                 </Label>
                 <Input
                   id="id"
                   type="text"
-                  placeholder="252-35-242"
+                  placeholder="e.g. 252-35-242"
                   value={studentId}
                   onChange={(e) => setStudentId(e.target.value)}
+                  onBlur={() => {
+                    if (studentId) setStudentId(formatStudentId(studentId));
+                  }}
                   required
                   className="text-xs font-mono"
                 />
-                <p className="text-[11px] text-slate-400">
-                  Must strictly follow the pattern: 252-35-242. A student cannot join multiple teams.
-                </p>
+                {studentId && !idRegex.test(formatStudentId(studentId)) && (
+                  <p className="text-[11px] text-red-600 font-medium mt-1">
+                    ID must follow DIU pattern: XXX-XX-XXX (e.g. 252-35-242)
+                  </p>
+                )}
               </div>
             </CardContent>
 

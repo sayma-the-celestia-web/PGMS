@@ -1599,6 +1599,31 @@ export class DataService {
     return { success: true };
   }
 
+  static async deleteTeam(teamId: string): Promise<boolean> {
+    const teamIdx = db.teams.findIndex((t) => t.id === teamId);
+    if (teamIdx === -1) throw new Error("Team not found");
+
+    const team = db.teams[teamIdx];
+    db.memberships = db.memberships.filter((m) => m.team_id !== teamId);
+    db.joinRequests = db.joinRequests.filter((r) => r.team_id !== teamId);
+    db.credentials = db.credentials.filter((c) => c.team_id !== teamId);
+    db.teams.splice(teamIdx, 1);
+
+    await this.logAuditEvent({
+      action: "DELETE_TEAM",
+      targetType: "TEAM",
+      targetId: teamId,
+      details: {
+        teamId,
+        teamName: team.team_name,
+        courseOfferingId: team.course_offering_id,
+        presentationNumber: team.presentation_number,
+      },
+    });
+
+    return true;
+  }
+
   static async getAllStudents(search?: string): Promise<
     (Student & {
       active_teams_count: number;

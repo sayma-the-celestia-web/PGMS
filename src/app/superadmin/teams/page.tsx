@@ -8,7 +8,12 @@ export const metadata = {
   title: "Teams Management | PGMS Superadmin",
 };
 
-export default async function TeamsManagementPage() {
+interface Props {
+  searchParams?: Promise<{ offeringId?: string; status?: string }>;
+}
+
+export default async function TeamsManagementPage({ searchParams }: Props) {
+  const resolvedParams = searchParams ? await searchParams : {};
   const [teams, offerings, semesters] = await Promise.all([
     DataService.getAllTeams(),
     DataService.getCourseOfferings(),
@@ -20,6 +25,8 @@ export default async function TeamsManagementPage() {
       initialTeams={teams}
       offerings={offerings}
       semesters={semesters}
+      initialOfferingId={resolvedParams.offeringId}
+      initialStatus={resolvedParams.status}
     />
   );
 }

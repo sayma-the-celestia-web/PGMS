@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { CourseOffering, Course, Semester, RegistrationStatus } from "@/types";
 import { createCourseOfferingAction, updateCourseOfferingAction } from "@/lib/actions";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -9,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RegistrationStatusBadge } from "@/components/ui/status-badge";
 import { formatDate } from "@/lib/utils";
-import { PlusCircle, Layers, AlertTriangle, Clock } from "lucide-react";
+import { PlusCircle, Layers, AlertTriangle, Clock, ArrowRight } from "lucide-react";
 
 interface Props {
   initialOfferings: CourseOffering[];
@@ -334,7 +335,14 @@ export function RegistrationsClient({
                     </span>
                   </td>
                   <td className="p-3.5 text-slate-600">
-                    {off.teams_count} teams ({off.students_count} students)
+                    <Link
+                      href={`/superadmin/teams?offeringId=${off.id}`}
+                      className="font-semibold text-diu-blue hover:underline inline-flex items-center gap-1"
+                      title="Manage teams for this offering"
+                    >
+                      {off.teams_count} teams ({off.students_count} students)
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
                   </td>
                   <td className="p-3.5 text-slate-600">
                     {formatDate(off.registration_deadline)}
