@@ -105,6 +105,34 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
   // When team size is 5 (max capacity), this is false: never shown, never enabling open requests!
   const canOpenForMembers = teamSize < maxTeamMembers;
 
+  // Max presentation teams limit configured for this offering (if max team is 10 -> 10 slots, if 20 -> 20 slots)
+  const maxAllowedTeams = Number(selectedOffering?.max_teams_limit) > 0 ? Number(selectedOffering.max_teams_limit) : 20;
+
+  // Compute presentation slots strictly matching maxAllowedTeams limit
+  const presentationSlots = useMemo(() => {
+    const slots = [];
+    for (let i = 1; i <= maxAllowedTeams; i++) {
+      const match = availableSlots.find((s) => s.number === i);
+      const suffix =
+        i === 1 ? "1st" : i === 2 ? "2nd" : i === 3 ? "3rd" : `${i}th`;
+      slots.push({
+        number: i,
+        label: `${suffix} Team (Slot ${i})`,
+        isTaken: match ? match.isTaken : false,
+        takenByTeam: match ? match.takenByTeam : undefined,
+      });
+    }
+    return slots;
+  }, [maxAllowedTeams, availableSlots]);
+
+  // Ensure selected presentation slot stays within [1, maxAllowedTeams] and defaults to first available
+  useEffect(() => {
+    if (presentationNumber > maxAllowedTeams || presentationNumber < 1) {
+      const firstAvailable = presentationSlots.find((s) => !s.isTaken);
+      setPresentationNumber(firstAvailable ? firstAvailable.number : 1);
+    }
+  }, [maxAllowedTeams, presentationSlots, presentationNumber]);
+
   // When selected offering changes, update default team size to max capacity and reset topic if disabled
   useEffect(() => {
     if (selectedOffering) {
@@ -843,11 +871,11 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                   Select Presentation Team Number *
                 </Label>
                 <span className="text-[11px] text-diu-blue font-semibold">
-                  Max Limit: {selectedOffering?.max_teams_limit || 20} Teams
+                  {maxAllowedTeams} Presentation Slots ({maxAllowedTeams} Max Teams)
                 </span>
               </div>
 
-              {loadingSlots ? (
+              {loadingSlots && availableSlots.length === 0 ? (
                 <div className="text-xs text-diu-slate py-2">Loading available slots...</div>
               ) : (
                 <select
@@ -857,7 +885,7 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                   className="w-full h-11 px-3 bg-white border border-slate-300 rounded-lg text-sm text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-diu-blue shadow-sm"
                   required
                 >
-                  {availableSlots.map((slot) => (
+                  {presentationSlots.map((slot) => (
                     <option
                       key={slot.number}
                       value={slot.number}
@@ -870,7 +898,7 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                 </select>
               )}
               <p className="text-[11px] text-slate-500">
-                1st team gets 1st slot by default. Already claimed slots are unavailable.
+                Offering supports {maxAllowedTeams} presentation teams. Choose any open slot (1 to {maxAllowedTeams}).
               </p>
             </div>
 

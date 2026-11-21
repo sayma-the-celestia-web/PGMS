@@ -501,7 +501,7 @@ export class DataService {
     takenByTeam?: string;
   }[]> {
     const offering = db.offerings.find((o) => o.id === offeringId);
-    const limit = offering?.max_teams_limit || 20;
+    const limit = Number(offering?.max_teams_limit) > 0 ? Number(offering?.max_teams_limit) : 20;
     const existingTeams = db.teams.filter((t) => t.course_offering_id === offeringId);
 
     const result = [];
@@ -546,7 +546,7 @@ export class DataService {
         throw new Error(`Team size must be between ${minCap} and ${maxCap} members.`);
       }
 
-      const maxTeamsLimit = offering.max_teams_limit || 20;
+      const maxTeamsLimit = Number(offering.max_teams_limit) > 0 ? Number(offering.max_teams_limit) : 20;
       if (payload.presentation_number < 1 || payload.presentation_number > maxTeamsLimit) {
         throw new Error(`Presentation team number must be between 1 and ${maxTeamsLimit}.`);
       }
