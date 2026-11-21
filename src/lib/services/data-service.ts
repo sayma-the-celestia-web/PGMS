@@ -31,9 +31,19 @@ import { generateToken, hashToken, timingSafeMatch } from "../utils/crypto";
 import { normalizeStudentId } from "../utils";
 import { createAdminSupabaseClient } from "../supabase/server";
 
-const STORAGE_PATH = path.join(process.cwd(), "data", "pgms-storage.json");
+const isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const LOCAL_STORAGE_DIR = path.join(process.cwd(), "data");
+const LOCAL_STORAGE_PATH = path.join(LOCAL_STORAGE_DIR, "pgms-storage.json");
+const TMP_STORAGE_PATH = path.join("/tmp", "pgms-storage.json");
+const STORAGE_PATH = isServerless ? TMP_STORAGE_PATH : LOCAL_STORAGE_PATH;
 
-// In-Memory store with local JSON disk persistence across server restarts
+function isSupabaseConfigured(): boolean {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  return !!(url && key && !url.includes("placeholder-project"));
+}
+
+// In-Memory store with local JSON disk persistence and Supabase Cloud synchronization
 class InMemoryDB {
   semesters: Semester[] = [...initialSemesters];
   courses: Course[] = [...initialCourses];
@@ -56,39 +66,53 @@ class InMemoryDB {
     },
   ];
 
+  private lastCloudSync = 0;
+  private isCloudSyncing = false;
+
   constructor() {
     this.loadFromDisk();
+    if (isSupabaseConfigured()) {
+      this.syncFromCloud().catch(() => {});
+    }
   }
 
   loadFromDisk() {
     try {
-      if (fs.existsSync(STORAGE_PATH)) {
-        const raw = fs.readFileSync(STORAGE_PATH, "utf-8");
-        const parsed = JSON.parse(raw);
-        if (parsed) {
-          if (Array.isArray(parsed.semesters) && parsed.semesters.length > 0) this.semesters = parsed.semesters;
-          if (Array.isArray(parsed.courses) && parsed.courses.length > 0) this.courses = parsed.courses;
-          if (Array.isArray(parsed.offerings) && parsed.offerings.length > 0) this.offerings = parsed.offerings;
-          if (Array.isArray(parsed.students)) this.students = parsed.students;
-          if (Array.isArray(parsed.teams)) this.teams = parsed.teams;
-          if (Array.isArray(parsed.memberships)) this.memberships = parsed.memberships;
-          if (Array.isArray(parsed.credentials)) this.credentials = parsed.credentials;
-          if (Array.isArray(parsed.joinRequests)) this.joinRequests = parsed.joinRequests;
-          if (Array.isArray(parsed.auditLogs)) this.auditLogs = parsed.auditLogs;
-        }
+      let targetPath = STORAGE_PATH;
+      if (!fs.existsSync(targetPath) && fs.existsSync(LOCAL_STORAGE_PATH)) {
+        targetPath = LOCAL_STORAGE_PATH;
+      }
+      if (fs.existsSync(targetPath)) {
+        const raw = fs.readFileSync(targetPath, "utf-8");
+        this.populateFromJSON(raw);
       }
     } catch (e) {
       console.warn("Failed to read storage from disk:", e);
     }
   }
 
-  saveToDisk() {
+  populateFromJSON(raw: string) {
     try {
-      const dir = path.dirname(STORAGE_PATH);
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+      const parsed = JSON.parse(raw);
+      if (parsed) {
+        if (Array.isArray(parsed.semesters) && parsed.semesters.length > 0) this.semesters = parsed.semesters;
+        if (Array.isArray(parsed.courses) && parsed.courses.length > 0) this.courses = parsed.courses;
+        if (Array.isArray(parsed.offerings) && parsed.offerings.length > 0) this.offerings = parsed.offerings;
+        if (Array.isArray(parsed.students)) this.students = parsed.students;
+        if (Array.isArray(parsed.teams)) this.teams = parsed.teams;
+        if (Array.isArray(parsed.memberships)) this.memberships = parsed.memberships;
+        if (Array.isArray(parsed.credentials)) this.credentials = parsed.credentials;
+        if (Array.isArray(parsed.joinRequests)) this.joinRequests = parsed.joinRequests;
+        if (Array.isArray(parsed.auditLogs)) this.auditLogs = parsed.auditLogs;
       }
-      const data = {
+    } catch (e) {
+      console.warn("Error parsing storage JSON:", e);
+    }
+  }
+
+  toJSONString(): string {
+    return JSON.stringify(
+      {
         semesters: this.semesters,
         courses: this.courses,
         offerings: this.offerings,
@@ -98,10 +122,88 @@ class InMemoryDB {
         credentials: this.credentials,
         joinRequests: this.joinRequests,
         auditLogs: this.auditLogs,
-      };
-      fs.writeFileSync(STORAGE_PATH, JSON.stringify(data, null, 2), "utf-8");
+      },
+      null,
+      2
+    );
+  }
+
+  saveToDisk() {
+    const raw = this.toJSONString();
+    try {
+      const dir = path.dirname(STORAGE_PATH);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(STORAGE_PATH, raw, "utf-8");
     } catch (e) {
-      console.error("Failed to write storage to disk:", e);
+      try {
+        fs.writeFileSync(TMP_STORAGE_PATH, raw, "utf-8");
+      } catch (err) {
+        console.warn("Could not write to local or tmp disk:", err);
+      }
+    }
+
+    if (STORAGE_PATH !== LOCAL_STORAGE_PATH) {
+      try {
+        if (fs.existsSync(LOCAL_STORAGE_DIR)) {
+          fs.writeFileSync(LOCAL_STORAGE_PATH, raw, "utf-8");
+        }
+      } catch {}
+    }
+
+    // Automatically synchronize state to Supabase cloud storage
+    this.syncToCloud().catch((err) => {
+      console.warn("Background cloud sync error:", err);
+    });
+  }
+
+  async syncToCloud(): Promise<void> {
+    if (!isSupabaseConfigured()) return;
+    try {
+      const client = createAdminSupabaseClient();
+      if (!client) return;
+
+      const raw = this.toJSONString();
+      await client.storage
+        .from("pgms-state")
+        .upload("pgms-storage.json", raw, {
+          upsert: true,
+          contentType: "application/json",
+        });
+      this.lastCloudSync = Date.now();
+    } catch (e) {
+      console.warn("Failed to sync storage to Supabase:", e);
+    }
+  }
+
+  async syncFromCloud(force = false): Promise<void> {
+    if (!isSupabaseConfigured()) return;
+    const now = Date.now();
+    if (!force && now - this.lastCloudSync < 2000) return;
+    if (this.isCloudSyncing) return;
+
+    this.isCloudSyncing = true;
+    try {
+      const client = createAdminSupabaseClient();
+      if (!client) return;
+
+      const { data, error } = await client.storage
+        .from("pgms-state")
+        .download("pgms-storage.json");
+
+      if (!error && data) {
+        const text = await data.text();
+        this.populateFromJSON(text);
+        this.lastCloudSync = Date.now();
+        try {
+          fs.writeFileSync(STORAGE_PATH, text, "utf-8");
+        } catch {}
+      }
+    } catch (e) {
+      console.warn("Failed to pull from Supabase storage:", e);
+    } finally {
+      this.isCloudSyncing = false;
     }
   }
 
@@ -127,19 +229,19 @@ class InMemoryDB {
 // Global singleton instance for in-memory persistence
 const globalForDB = global as unknown as { pgmsDB?: InMemoryDB };
 export const db = globalForDB.pgmsDB ?? new InMemoryDB();
-if (process.env.NODE_ENV !== "production") globalForDB.pgmsDB = db;
+// ALWAYS preserve singleton in both dev AND production!
+globalForDB.pgmsDB = db;
 
 export class DataService {
-  private static isSupabaseConfigured(): boolean {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    return !!(url && key && !url.includes("placeholder-project"));
+  static isSupabaseConfigured(): boolean {
+    return isSupabaseConfigured();
   }
 
   // -------------------------------------------------------------
   // SEMESTERS
   // -------------------------------------------------------------
   static async getSemesters(): Promise<Semester[]> {
+    await db.syncFromCloud();
     if (this.isSupabaseConfigured()) {
       const client = createAdminSupabaseClient();
       if (client) {
@@ -204,6 +306,7 @@ export class DataService {
   // COURSES
   // -------------------------------------------------------------
   static async getCourses(): Promise<Course[]> {
+    await db.syncFromCloud();
     if (this.isSupabaseConfigured()) {
       const client = createAdminSupabaseClient();
       if (client) {
@@ -288,6 +391,7 @@ export class DataService {
     status?: string;
     search?: string;
   }): Promise<CourseOffering[]> {
+    await db.syncFromCloud();
     let list = db.offerings.map((offering) => {
       const course = db.courses.find((c) => c.id === offering.course_id);
       const semester = db.semesters.find((s) => s.id === offering.semester_id);
@@ -380,6 +484,7 @@ export class DataService {
     };
     db.offerings.push(newOffering);
     db.saveToDisk();
+    await db.syncToCloud();
     await this.logAuditEvent({
       action: "CREATE_COURSE_OFFERING",
       targetType: "COURSE_OFFERING",
@@ -421,6 +526,7 @@ export class DataService {
     // Existing registered teams, active memberships, and presentation slots remain fully preserved.
     Object.assign(offering, updates, { updated_at: new Date().toISOString() });
     db.saveToDisk();
+    await db.syncToCloud();
     await this.logAuditEvent({
       action: "UPDATE_COURSE_OFFERING",
       targetType: "COURSE_OFFERING",
@@ -434,6 +540,7 @@ export class DataService {
   // TEAMS & PUBLIC DIRECTORY
   // -------------------------------------------------------------
   static async getTeamsByOffering(offeringId: string): Promise<Team[]> {
+    await db.syncFromCloud();
     const teams = db.teams.filter((t) => t.course_offering_id === offeringId);
     return teams.map((team) => {
       const activeMemberships = db.memberships
@@ -471,6 +578,7 @@ export class DataService {
   }
 
   static async getTeamById(id: string, includePrivate = false): Promise<Team | null> {
+    await db.syncFromCloud();
     const team = db.teams.find((t) => t.id === id);
     if (!team) return null;
 
@@ -520,6 +628,7 @@ export class DataService {
     isTaken: boolean;
     takenByTeam?: string;
   }[]> {
+    await db.syncFromCloud();
     const offering = db.offerings.find((o) => o.id === offeringId);
     const configuredLimit = Number(offering?.max_teams_limit) > 0 ? Number(offering?.max_teams_limit) : 20;
     const existingTeams = db.teams.filter((t) => t.course_offering_id === offeringId);
@@ -757,6 +866,7 @@ export class DataService {
 
       // Persist to disk immediately so server restarts never lose registered teams
       db.saveToDisk();
+      await db.syncToCloud();
 
       const course = db.courses.find((c) => c.id === offering.course_id);
 
@@ -782,6 +892,7 @@ export class DataService {
     leaderName: string,
     leaderStudentId: string
   ): Promise<LeaderLoginResult> {
+    await db.syncFromCloud();
     const normId = normalizeStudentId(leaderStudentId);
     if (!normId) {
       return { success: false, error: "Please provide a valid Student ID." };
@@ -1592,6 +1703,7 @@ export class DataService {
     status?: string;
     search?: string;
   }): Promise<Team[]> {
+    await db.syncFromCloud();
     let teams = await Promise.all(db.teams.map((t) => this.getTeamById(t.id, true)));
     let list = teams.filter((t): t is Team => t !== null);
 
@@ -1661,6 +1773,7 @@ export class DataService {
       details: updates,
     });
     db.saveToDisk();
+    await db.syncToCloud();
 
     return (await this.getTeamById(team.id, true))!;
   }
@@ -1699,6 +1812,7 @@ export class DataService {
       details: { reason, team_id: team?.id },
     });
     db.saveToDisk();
+    await db.syncToCloud();
 
     return { success: true };
   }
@@ -1725,6 +1839,7 @@ export class DataService {
       },
     });
     db.saveToDisk();
+    await db.syncToCloud();
 
     return true;
   }

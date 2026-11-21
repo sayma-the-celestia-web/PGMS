@@ -1,0 +1,155 @@
+{
+  "semesters": [
+    {
+      "id": "sem-spring-2026",
+      "name": "Spring 2026",
+      "academic_year": "2026",
+      "start_date": "2026-01-10",
+      "end_date": "2026-06-30",
+      "is_active": true,
+      "created_at": "2026-11-21T11:12:18.458Z",
+      "updated_at": "2026-11-21T11:12:18.459Z"
+    }
+  ],
+  "courses": [
+    {
+      "id": "crs-se214",
+      "code": "SE214",
+      "name": "Algorithm Design and Analysis",
+      "description": "Algorithm analysis, design paradigms, complexity theory, and practical algorithm implementation for Software Engineering students.",
+      "slug": "se214",
+      "created_at": "2026-11-21T11:12:18.459Z",
+      "updated_at": "2026-11-21T11:12:18.459Z"
+    }
+  ],
+  "offerings": [
+    {
+      "id": "offering-se214-h",
+      "course_id": "crs-se214",
+      "semester_id": "sem-spring-2026",
+      "section": "H",
+      "registration_status": "OPEN",
+      "registration_start": "2026-01-01T00:00:00.000Z",
+      "registration_deadline": "2026-11-22T05:59:00.000Z",
+      "min_team_capacity": 2,
+      "max_team_capacity": 5,
+      "max_teams_limit": 10,
+      "topic_enabled": false,
+      "created_at": "2026-11-21T11:12:18.459Z",
+      "updated_at": "2026-11-21T13:49:00.000Z"
+    }
+  ],
+  "students": [
+    {
+      "id": "stu-1795269927421-7fn2r",
+      "full_name": "Tanvir Ahmed",
+      "student_id": "252-35-101",
+      "normalized_student_id": "252-35-101",
+      "created_at": "2026-11-21T14:05:27.421Z",
+      "updated_at": "2026-11-21T14:05:27.421Z"
+    },
+    {
+      "id": "stu-1795269927421-k0uo0",
+      "full_name": "Ayesha Rahman",
+      "student_id": "252-35-102",
+      "normalized_student_id": "252-35-102",
+      "created_at": "2026-11-21T14:05:27.421Z",
+      "updated_at": "2026-11-21T14:05:27.421Z"
+    },
+    {
+      "id": "stu-1795269927425-9nsad",
+      "full_name": "Mahmud Hasan",
+      "student_id": "252-35-104",
+      "normalized_student_id": "252-35-104",
+      "created_at": "2026-11-21T14:05:27.425Z",
+      "updated_at": "2026-11-21T14:05:27.425Z"
+    }
+  ],
+  "teams": [
+    {
+      "id": "team-1795269927421-6c7r3",
+      "course_offering_id": "offering-se214-h",
+      "presentation_number": 1,
+      "team_name": "Neural Ninjas Elite",
+      "capacity": 4,
+      "topic": "Transformer Attention Mechanisms",
+      "leader_membership_id": "mem-1795269927421-edwwl",
+      "status": "OPEN",
+      "created_at": "2026-11-21T14:05:27.421Z",
+      "updated_at": "2026-11-21T14:05:27.425Z",
+      "slide_link": "https://docs.google.com/presentation/d/sample123",
+      "slide_file_name": "presentation_neural_ninjas.pptx"
+    }
+  ],
+  "memberships": [
+    {
+      "id": "mem-1795269927421-edwwl",
+      "team_id": "team-1795269927421-6c7r3",
+      "student_id": "stu-1795269927421-7fn2r",
+      "course_offering_id": "offering-se214-h",
+      "role": "LEADER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T14:05:27.421Z",
+      "updated_at": "2026-11-21T14:05:27.421Z"
+    },
+    {
+      "id": "mem-1795269927421-vvq97",
+      "team_id": "team-1795269927421-6c7r3",
+      "student_id": "stu-1795269927421-k0uo0",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T14:05:27.421Z",
+      "updated_at": "2026-11-21T14:05:27.421Z"
+    },
+    {
+      "id": "mem-1795269927425-9fuy9",
+      "team_id": "team-1795269927421-6c7r3",
+      "student_id": "stu-1795269927425-9nsad",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T14:05:27.425Z",
+      "updated_at": "2026-11-21T14:05:27.425Z"
+    }
+  ],
+  "credentials": [
+    {
+      "id": "cred-tm-1795269927421",
+      "credential_type": "TEAM_MANAGEMENT",
+      "team_id": "team-1795269927421-6c7r3",
+      "membership_id": null,
+      "token_hash": "544e53678cb2d1f6edbb397604405b06aaa0fe848a3a29355dd1f33a9b1148d1",
+      "created_at": "2026-11-21T14:05:27.421Z",
+      "expires_at": null,
+      "revoked_at": null,
+      "last_used_at": null
+    }
+  ],
+  "joinRequests": [
+    {
+      "id": "req-1795269927424-bder0",
+      "team_id": "team-1795269927421-6c7r3",
+      "course_offering_id": "offering-se214-h",
+      "student_name": "Mahmud Hasan",
+      "student_id": "252-35-104",
+      "status": "ACCEPTED",
+      "created_at": "2026-11-21T14:05:27.424Z",
+      "updated_at": "2026-11-21T14:05:27.425Z"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "log-1",
+      "actor_admin_id": null,
+      "actor_email": "superadmin@daffodilvarsity.edu.bd",
+      "action": "INITIALIZE_SYSTEM",
+      "target_type": "SYSTEM",
+      "target_id": "root",
+      "details": {
+        "message": "PGMS Database and initial courses initialized"
+      },
+      "created_at": "2026-11-14T11:12:18.848Z"
+    }
+  ]
+}

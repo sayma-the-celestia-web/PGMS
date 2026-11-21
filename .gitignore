@@ -36,5 +36,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local persistent runtime storage
-data/*.json
+supabase/.temp/
