@@ -42,6 +42,7 @@ export const multiStepRegisterTeamSchema = z.object({
       studentId: studentIdSchema,
     })
   ).default([]),
+  isOpenForMembers: z.boolean().optional().default(true),
 });
 
 export const leaderLoginSchema = z.object({

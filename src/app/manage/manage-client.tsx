@@ -290,7 +290,7 @@ export function ManageClient() {
                 <Input
                   id="leadId"
                   type="text"
-                  placeholder="e.g. 252-35-242"
+                  placeholder="Student ID"
                   value={leaderId}
                   onChange={(e) => setLeaderId(e.target.value)}
                   onBlur={() => {

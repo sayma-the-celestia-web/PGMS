@@ -229,7 +229,7 @@ export function JoinTeamClient({ team }: Props) {
                 <Input
                   id="id"
                   type="text"
-                  placeholder="e.g. 252-35-242"
+                  placeholder="Student ID"
                   value={studentId}
                   onChange={(e) => setStudentId(e.target.value)}
                   onBlur={() => {

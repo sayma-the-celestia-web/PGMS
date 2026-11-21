@@ -34,6 +34,7 @@ import {
   Layers,
   UploadCloud,
   FileText,
+  UserPlus,
 } from "lucide-react";
 import { formatStudentId } from "@/lib/utils";
 
@@ -88,6 +89,15 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
 
   // Pattern strictly checking 252-35-242
   const idRegex = /^\d{3}-\d{2}-\d{3}$/;
+
+  // Open for new members toggle (when registering with fewer members than team size)
+  const [isOpenForMembers, setIsOpenForMembers] = useState(true);
+
+  // Compute filled members count
+  const filledMembersCount = useMemo(() => {
+    return 1 + members.filter((m) => m.name.trim() || m.studentId.trim()).length;
+  }, [members]);
+  const hasVacantSlots = filledMembersCount < teamSize;
 
   // When selected offering changes, update default team size bounds
   useEffect(() => {
@@ -242,6 +252,7 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
         leaderName: leaderName.trim(),
         leaderStudentId: formattedLeaderId,
         members: activeMembers,
+        isOpenForMembers: hasVacantSlots ? isOpenForMembers : false,
       });
 
       if (!res.success || !res.data) {
@@ -657,7 +668,7 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                     <Input
                       id="leaderId"
                       type="text"
-                      placeholder="e.g. 252-35-242"
+                      placeholder="Student ID"
                       value={leaderId}
                       onChange={(e) => setLeaderId(e.target.value)}
                       onBlur={() => {
@@ -711,7 +722,7 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                         </Label>
                         <Input
                           type="text"
-                          placeholder="e.g. 252-35-242"
+                          placeholder="Student ID"
                           value={mem.studentId}
                           onChange={(e) => updateMember(idx, "studentId", e.target.value)}
                           onBlur={() => {
@@ -730,6 +741,56 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                     </div>
                   ))}
                 </div>
+
+                {/* Enable/Disable Open for New Members Toggle Bar */}
+                {hasVacantSlots && (
+                  <div className="p-4 bg-emerald-50/70 border border-emerald-200/90 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm transition-all">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <UserPlus className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span className="text-xs font-bold text-diu-navy">
+                          Open for New Members to Join?
+                        </span>
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                            isOpenForMembers
+                              ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                              : "bg-slate-200 text-slate-700 border border-slate-300"
+                          }`}
+                        >
+                          {isOpenForMembers ? "Open (Accepting Requests)" : "Closed (Private)"}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">
+                        Your team currently has {teamSize - filledMembersCount} vacant slot{teamSize - filledMembersCount > 1 ? "s" : ""} (registered {filledMembersCount} of {teamSize} total capacity).
+                        {isOpenForMembers
+                          ? " Other students can discover this team on the Course Directory and request to join."
+                          : " Team registration will be closed. Only the team leader can invite members later."}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                      <span className="text-xs font-semibold text-slate-700">
+                        {isOpenForMembers ? "Open" : "Closed"}
+                      </span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={isOpenForMembers}
+                        onClick={() => setIsOpenForMembers(!isOpenForMembers)}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-diu-blue focus:ring-offset-2 ${
+                          isOpenForMembers ? "bg-emerald-600" : "bg-slate-300"
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            isOpenForMembers ? "translate-x-5" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
 
@@ -823,6 +884,31 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                     <span className="text-slate-400 block text-[10px]">TEAM NAME</span>
                     <span className="font-semibold text-slate-800">
                       {teamName.trim() || `Team ${presentationNumber} (Default)`}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 border-b border-slate-200 pb-2">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">TEAM SIZE / VACANCY</span>
+                    <span className="font-semibold text-slate-800">
+                      {filledMembersCount} of {teamSize} Members Registered ({teamSize - filledMembersCount} Vacant)
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">JOIN STATUS</span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${
+                      hasVacantSlots
+                        ? isOpenForMembers
+                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                          : "bg-slate-200 text-slate-700 border border-slate-300"
+                        : "bg-blue-100 text-diu-blue"
+                    }`}>
+                      {hasVacantSlots
+                        ? isOpenForMembers
+                          ? "Open (Accepting Join Requests)"
+                          : "Closed (Private)"
+                        : "Full Team"}
                     </span>
                   </div>
                 </div>

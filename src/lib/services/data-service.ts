@@ -16,6 +16,8 @@ import {
   LeaderLoginResult,
   TeamJoinRequest,
 } from "@/types";
+import fs from "fs";
+import path from "path";
 import {
   initialSemesters,
   initialCourses,
@@ -29,7 +31,9 @@ import { generateToken, hashToken, timingSafeMatch } from "../utils/crypto";
 import { normalizeStudentId } from "../utils";
 import { createAdminSupabaseClient } from "../supabase/server";
 
-// In-Memory store (persists across hot-reloads within node process)
+const STORAGE_PATH = path.join(process.cwd(), "data", "pgms-storage.json");
+
+// In-Memory store with local JSON disk persistence across server restarts
 class InMemoryDB {
   semesters: Semester[] = [...initialSemesters];
   courses: Course[] = [...initialCourses];
@@ -51,6 +55,55 @@ class InMemoryDB {
       created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
     },
   ];
+
+  constructor() {
+    this.loadFromDisk();
+  }
+
+  loadFromDisk() {
+    try {
+      if (fs.existsSync(STORAGE_PATH)) {
+        const raw = fs.readFileSync(STORAGE_PATH, "utf-8");
+        const parsed = JSON.parse(raw);
+        if (parsed) {
+          if (Array.isArray(parsed.semesters) && parsed.semesters.length > 0) this.semesters = parsed.semesters;
+          if (Array.isArray(parsed.courses) && parsed.courses.length > 0) this.courses = parsed.courses;
+          if (Array.isArray(parsed.offerings) && parsed.offerings.length > 0) this.offerings = parsed.offerings;
+          if (Array.isArray(parsed.students)) this.students = parsed.students;
+          if (Array.isArray(parsed.teams)) this.teams = parsed.teams;
+          if (Array.isArray(parsed.memberships)) this.memberships = parsed.memberships;
+          if (Array.isArray(parsed.credentials)) this.credentials = parsed.credentials;
+          if (Array.isArray(parsed.joinRequests)) this.joinRequests = parsed.joinRequests;
+          if (Array.isArray(parsed.auditLogs)) this.auditLogs = parsed.auditLogs;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to read storage from disk:", e);
+    }
+  }
+
+  saveToDisk() {
+    try {
+      const dir = path.dirname(STORAGE_PATH);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      const data = {
+        semesters: this.semesters,
+        courses: this.courses,
+        offerings: this.offerings,
+        students: this.students,
+        teams: this.teams,
+        memberships: this.memberships,
+        credentials: this.credentials,
+        joinRequests: this.joinRequests,
+        auditLogs: this.auditLogs,
+      };
+      fs.writeFileSync(STORAGE_PATH, JSON.stringify(data, null, 2), "utf-8");
+    } catch (e) {
+      console.error("Failed to write storage to disk:", e);
+    }
+  }
 
   // Concurrency mutex lock for atomic operations
   private locks = new Map<string, Promise<void>>();
@@ -605,7 +658,16 @@ export class DataService {
 
       const teamId = `team-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const leaderMembershipId = `mem-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      const initialStatus = totalInitialCount >= payload.capacity ? "FULL" : "OPEN";
+      
+      // If all slots are already filled, team is FULL.
+      // If there are open slots (e.g. capacity is 5, registered with 2, 3, or 4 members):
+      // Respect payload.isOpenForMembers toggle! If true -> "OPEN", if false -> "CLOSED".
+      let initialStatus: "OPEN" | "FULL" | "CLOSED" = "OPEN";
+      if (totalInitialCount >= payload.capacity) {
+        initialStatus = "FULL";
+      } else {
+        initialStatus = payload.isOpenForMembers === false ? "CLOSED" : "OPEN";
+      }
 
       const newTeam: Team = {
         id: teamId,
@@ -660,6 +722,9 @@ export class DataService {
         revoked_at: null,
         last_used_at: null,
       });
+
+      // Persist to disk immediately so server restarts never lose registered teams
+      db.saveToDisk();
 
       const course = db.courses.find((c) => c.id === offering.course_id);
 
@@ -749,6 +814,7 @@ export class DataService {
     if (data.slide_file_name !== undefined) team.slide_file_name = data.slide_file_name || null;
     if (data.slide_file_url !== undefined) team.slide_file_url = data.slide_file_url || null;
     team.updated_at = new Date().toISOString();
+    db.saveToDisk();
 
     return (await this.getTeamById(teamId, true))!;
   }
@@ -772,6 +838,7 @@ export class DataService {
 
     team.team_name = trimmed;
     team.updated_at = new Date().toISOString();
+    db.saveToDisk();
     return (await this.getTeamById(teamId, true))!;
   }
 
@@ -789,6 +856,7 @@ export class DataService {
 
     team.status = newStatus;
     team.updated_at = new Date().toISOString();
+    db.saveToDisk();
     return (await this.getTeamById(teamId, true))!;
   }
 
@@ -863,6 +931,7 @@ export class DataService {
       updated_at: new Date().toISOString(),
     };
     db.joinRequests.push(joinReq);
+    db.saveToDisk();
 
     return {
       success: true,
@@ -950,6 +1019,7 @@ export class DataService {
       team.status = "FULL";
     }
     team.updated_at = new Date().toISOString();
+    db.saveToDisk();
 
     return {
       success: true,
@@ -1558,6 +1628,7 @@ export class DataService {
       targetId: teamId,
       details: updates,
     });
+    db.saveToDisk();
 
     return (await this.getTeamById(team.id, true))!;
   }
@@ -1595,6 +1666,7 @@ export class DataService {
       targetId: membershipId,
       details: { reason, team_id: team?.id },
     });
+    db.saveToDisk();
 
     return { success: true };
   }
@@ -1620,6 +1692,7 @@ export class DataService {
         presentationNumber: team.presentation_number,
       },
     });
+    db.saveToDisk();
 
     return true;
   }

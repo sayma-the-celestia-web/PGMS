@@ -22,7 +22,7 @@ export default function ManagePage() {
             Team Login &amp; Management
           </h1>
           <p className="text-sm text-diu-slate">
-            Login with your Team Leader Name and Student ID (252-35-242) to edit your team name, upload presentation slides, and manage member requests.
+            Login with your Team Leader Name and Student ID to edit your team name, upload presentation slides, and manage member requests.
           </p>
         </div>
 

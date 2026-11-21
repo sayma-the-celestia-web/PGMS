@@ -159,6 +159,7 @@ export interface MultiStepRegisterTeamPayload {
   leaderName: string;
   leaderStudentId: string;
   members: MultiStepMemberItem[];
+  isOpenForMembers?: boolean;
 }
 
 export interface JoinTeamPayload {
