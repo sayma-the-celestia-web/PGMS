@@ -580,9 +580,9 @@ export function CourseDirectoryClient({
                         <p className="text-slate-600 bg-slate-50 p-2 rounded border border-slate-100 text-[11px] line-clamp-2 italic">
                           Topic: {team.topic}
                         </p>
-                      ) : (
+                      ) : team.course_offering?.topic_enabled !== false ? (
                         <span className="text-slate-400 italic text-[11px] block">No topic specified</span>
-                      )}
+                      ) : null}
 
                       {/* Vacancy Progress */}
                       <div>

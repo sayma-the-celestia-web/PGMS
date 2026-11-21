@@ -41,86 +41,86 @@
   ],
   "students": [
     {
-      "id": "stu-1795269927421-7fn2r",
+      "id": "stu-1795265122555-ok901",
       "full_name": "Tanvir Ahmed",
       "student_id": "252-35-101",
       "normalized_student_id": "252-35-101",
-      "created_at": "2026-11-21T14:05:27.421Z",
-      "updated_at": "2026-11-21T14:05:27.421Z"
+      "created_at": "2026-11-21T12:45:22.555Z",
+      "updated_at": "2026-11-21T12:45:22.555Z"
     },
     {
-      "id": "stu-1795269927421-k0uo0",
+      "id": "stu-1795265122555-5hz28",
       "full_name": "Ayesha Rahman",
       "student_id": "252-35-102",
       "normalized_student_id": "252-35-102",
-      "created_at": "2026-11-21T14:05:27.421Z",
-      "updated_at": "2026-11-21T14:05:27.421Z"
+      "created_at": "2026-11-21T12:45:22.555Z",
+      "updated_at": "2026-11-21T12:45:22.555Z"
     },
     {
-      "id": "stu-1795269927425-9nsad",
+      "id": "stu-1795265122559-aw0oz",
       "full_name": "Mahmud Hasan",
       "student_id": "252-35-104",
       "normalized_student_id": "252-35-104",
-      "created_at": "2026-11-21T14:05:27.425Z",
-      "updated_at": "2026-11-21T14:05:27.425Z"
+      "created_at": "2026-11-21T12:45:22.559Z",
+      "updated_at": "2026-11-21T12:45:22.559Z"
     }
   ],
   "teams": [
     {
-      "id": "team-1795269927421-6c7r3",
+      "id": "team-1795265122555-vp7bt",
       "course_offering_id": "offering-se214-h",
       "presentation_number": 1,
       "team_name": "Neural Ninjas Elite",
       "capacity": 4,
       "topic": "Transformer Attention Mechanisms",
-      "leader_membership_id": "mem-1795269927421-edwwl",
+      "leader_membership_id": "mem-1795265122555-ldux7",
       "status": "OPEN",
-      "created_at": "2026-11-21T14:05:27.421Z",
-      "updated_at": "2026-11-21T14:05:27.425Z",
+      "created_at": "2026-11-21T12:45:22.555Z",
+      "updated_at": "2026-11-21T12:45:22.559Z",
       "slide_link": "https://docs.google.com/presentation/d/sample123",
       "slide_file_name": "presentation_neural_ninjas.pptx"
     }
   ],
   "memberships": [
     {
-      "id": "mem-1795269927421-edwwl",
-      "team_id": "team-1795269927421-6c7r3",
-      "student_id": "stu-1795269927421-7fn2r",
+      "id": "mem-1795265122555-ldux7",
+      "team_id": "team-1795265122555-vp7bt",
+      "student_id": "stu-1795265122555-ok901",
       "course_offering_id": "offering-se214-h",
       "role": "LEADER",
       "status": "ACTIVE",
-      "joined_at": "2026-11-21T14:05:27.421Z",
-      "updated_at": "2026-11-21T14:05:27.421Z"
+      "joined_at": "2026-11-21T12:45:22.555Z",
+      "updated_at": "2026-11-21T12:45:22.555Z"
     },
     {
-      "id": "mem-1795269927421-vvq97",
-      "team_id": "team-1795269927421-6c7r3",
-      "student_id": "stu-1795269927421-k0uo0",
+      "id": "mem-1795265122555-u2u4y",
+      "team_id": "team-1795265122555-vp7bt",
+      "student_id": "stu-1795265122555-5hz28",
       "course_offering_id": "offering-se214-h",
       "role": "MEMBER",
       "status": "ACTIVE",
-      "joined_at": "2026-11-21T14:05:27.421Z",
-      "updated_at": "2026-11-21T14:05:27.421Z"
+      "joined_at": "2026-11-21T12:45:22.555Z",
+      "updated_at": "2026-11-21T12:45:22.555Z"
     },
     {
-      "id": "mem-1795269927425-9fuy9",
-      "team_id": "team-1795269927421-6c7r3",
-      "student_id": "stu-1795269927425-9nsad",
+      "id": "mem-1795265122559-hn9re",
+      "team_id": "team-1795265122555-vp7bt",
+      "student_id": "stu-1795265122559-aw0oz",
       "course_offering_id": "offering-se214-h",
       "role": "MEMBER",
       "status": "ACTIVE",
-      "joined_at": "2026-11-21T14:05:27.425Z",
-      "updated_at": "2026-11-21T14:05:27.425Z"
+      "joined_at": "2026-11-21T12:45:22.559Z",
+      "updated_at": "2026-11-21T12:45:22.559Z"
     }
   ],
   "credentials": [
     {
-      "id": "cred-tm-1795269927421",
+      "id": "cred-tm-1795265122556",
       "credential_type": "TEAM_MANAGEMENT",
-      "team_id": "team-1795269927421-6c7r3",
+      "team_id": "team-1795265122555-vp7bt",
       "membership_id": null,
-      "token_hash": "544e53678cb2d1f6edbb397604405b06aaa0fe848a3a29355dd1f33a9b1148d1",
-      "created_at": "2026-11-21T14:05:27.421Z",
+      "token_hash": "045491e7cbb8c244bf614183ee568b7985fbc19213d265e2a0c9fcf70033d155",
+      "created_at": "2026-11-21T12:45:22.556Z",
       "expires_at": null,
       "revoked_at": null,
       "last_used_at": null
@@ -128,14 +128,14 @@
   ],
   "joinRequests": [
     {
-      "id": "req-1795269927424-bder0",
-      "team_id": "team-1795269927421-6c7r3",
+      "id": "req-1795265122558-5355s",
+      "team_id": "team-1795265122555-vp7bt",
       "course_offering_id": "offering-se214-h",
       "student_name": "Mahmud Hasan",
       "student_id": "252-35-104",
       "status": "ACCEPTED",
-      "created_at": "2026-11-21T14:05:27.424Z",
-      "updated_at": "2026-11-21T14:05:27.425Z"
+      "created_at": "2026-11-21T12:45:22.558Z",
+      "updated_at": "2026-11-21T12:45:22.559Z"
     }
   ],
   "auditLogs": [

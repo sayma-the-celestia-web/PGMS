@@ -442,6 +442,8 @@ export function TeamsManagementClient({
                               <p className="truncate text-slate-700 font-medium" title={team.topic}>
                                 {team.topic}
                               </p>
+                            ) : team.course_offering?.topic_enabled === false ? (
+                              <span className="text-slate-400 italic text-[11px]">Topic disabled</span>
                             ) : (
                               <span className="text-slate-400 italic text-[11px]">No topic specified</span>
                             )}

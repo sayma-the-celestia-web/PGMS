@@ -228,20 +228,49 @@ class InMemoryDB {
 
 // Global singleton instance for in-memory persistence
 const globalForDB = global as unknown as { pgmsDB?: InMemoryDB };
-export const db = globalForDB.pgmsDB ?? new InMemoryDB();
-// ALWAYS preserve singleton in both dev AND production!
-globalForDB.pgmsDB = db;
+if (!globalForDB.pgmsDB || typeof (globalForDB.pgmsDB as any).syncFromCloud !== "function") {
+  globalForDB.pgmsDB = new InMemoryDB();
+} else {
+  // Ensure prototype is always updated across Next.js Turbopack / Webpack HMR
+  Object.setPrototypeOf(globalForDB.pgmsDB, InMemoryDB.prototype);
+}
+
+// Fallback safety guards in case an existing global object lacks the methods
+if (typeof (globalForDB.pgmsDB as any).syncFromCloud !== "function") {
+  (globalForDB.pgmsDB as any).syncFromCloud = async function (force = false) {
+    return InMemoryDB.prototype.syncFromCloud.call(this, force);
+  };
+}
+if (typeof (globalForDB.pgmsDB as any).syncToCloud !== "function") {
+  (globalForDB.pgmsDB as any).syncToCloud = async function () {
+    return InMemoryDB.prototype.syncToCloud.call(this);
+  };
+}
+
+export const db = globalForDB.pgmsDB;
 
 export class DataService {
   static isSupabaseConfigured(): boolean {
     return isSupabaseConfigured();
   }
 
+  static async syncFromCloud(force = false): Promise<void> {
+    if (typeof db?.syncFromCloud === "function") {
+      await db.syncFromCloud(force);
+    }
+  }
+
+  static async syncToCloud(): Promise<void> {
+    if (typeof db?.syncToCloud === "function") {
+      await db.syncToCloud();
+    }
+  }
+
   // -------------------------------------------------------------
   // SEMESTERS
   // -------------------------------------------------------------
   static async getSemesters(): Promise<Semester[]> {
-    await db.syncFromCloud();
+    await this.syncFromCloud();
     if (this.isSupabaseConfigured()) {
       const client = createAdminSupabaseClient();
       if (client) {
@@ -306,7 +335,7 @@ export class DataService {
   // COURSES
   // -------------------------------------------------------------
   static async getCourses(): Promise<Course[]> {
-    await db.syncFromCloud();
+    await this.syncFromCloud();
     if (this.isSupabaseConfigured()) {
       const client = createAdminSupabaseClient();
       if (client) {
@@ -391,7 +420,7 @@ export class DataService {
     status?: string;
     search?: string;
   }): Promise<CourseOffering[]> {
-    await db.syncFromCloud();
+    await this.syncFromCloud();
     let list = db.offerings.map((offering) => {
       const course = db.courses.find((c) => c.id === offering.course_id);
       const semester = db.semesters.find((s) => s.id === offering.semester_id);
@@ -484,7 +513,7 @@ export class DataService {
     };
     db.offerings.push(newOffering);
     db.saveToDisk();
-    await db.syncToCloud();
+    await this.syncToCloud();
     await this.logAuditEvent({
       action: "CREATE_COURSE_OFFERING",
       targetType: "COURSE_OFFERING",
@@ -526,7 +555,7 @@ export class DataService {
     // Existing registered teams, active memberships, and presentation slots remain fully preserved.
     Object.assign(offering, updates, { updated_at: new Date().toISOString() });
     db.saveToDisk();
-    await db.syncToCloud();
+    await this.syncToCloud();
     await this.logAuditEvent({
       action: "UPDATE_COURSE_OFFERING",
       targetType: "COURSE_OFFERING",
@@ -540,7 +569,7 @@ export class DataService {
   // TEAMS & PUBLIC DIRECTORY
   // -------------------------------------------------------------
   static async getTeamsByOffering(offeringId: string): Promise<Team[]> {
-    await db.syncFromCloud();
+    await this.syncFromCloud();
     const teams = db.teams.filter((t) => t.course_offering_id === offeringId);
     return teams.map((team) => {
       const activeMemberships = db.memberships
@@ -578,7 +607,7 @@ export class DataService {
   }
 
   static async getTeamById(id: string, includePrivate = false): Promise<Team | null> {
-    await db.syncFromCloud();
+    await this.syncFromCloud();
     const team = db.teams.find((t) => t.id === id);
     if (!team) return null;
 
@@ -628,7 +657,7 @@ export class DataService {
     isTaken: boolean;
     takenByTeam?: string;
   }[]> {
-    await db.syncFromCloud();
+    await this.syncFromCloud();
     const offering = db.offerings.find((o) => o.id === offeringId);
     const configuredLimit = Number(offering?.max_teams_limit) > 0 ? Number(offering?.max_teams_limit) : 20;
     const existingTeams = db.teams.filter((t) => t.course_offering_id === offeringId);
@@ -866,7 +895,7 @@ export class DataService {
 
       // Persist to disk immediately so server restarts never lose registered teams
       db.saveToDisk();
-      await db.syncToCloud();
+      await this.syncToCloud();
 
       const course = db.courses.find((c) => c.id === offering.course_id);
 
@@ -892,7 +921,7 @@ export class DataService {
     leaderName: string,
     leaderStudentId: string
   ): Promise<LeaderLoginResult> {
-    await db.syncFromCloud();
+    await this.syncFromCloud();
     const normId = normalizeStudentId(leaderStudentId);
     if (!normId) {
       return { success: false, error: "Please provide a valid Student ID." };
@@ -1703,7 +1732,7 @@ export class DataService {
     status?: string;
     search?: string;
   }): Promise<Team[]> {
-    await db.syncFromCloud();
+    await this.syncFromCloud();
     let teams = await Promise.all(db.teams.map((t) => this.getTeamById(t.id, true)));
     let list = teams.filter((t): t is Team => t !== null);
 
@@ -1773,7 +1802,7 @@ export class DataService {
       details: updates,
     });
     db.saveToDisk();
-    await db.syncToCloud();
+    await this.syncToCloud();
 
     return (await this.getTeamById(team.id, true))!;
   }
@@ -1812,7 +1841,7 @@ export class DataService {
       details: { reason, team_id: team?.id },
     });
     db.saveToDisk();
-    await db.syncToCloud();
+    await this.syncToCloud();
 
     return { success: true };
   }
@@ -1839,7 +1868,7 @@ export class DataService {
       },
     });
     db.saveToDisk();
-    await db.syncToCloud();
+    await this.syncToCloud();
 
     return true;
   }

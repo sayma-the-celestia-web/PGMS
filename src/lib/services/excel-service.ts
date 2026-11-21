@@ -31,26 +31,177 @@ export async function generateTeamsExcelWorkbook(
   const teamIds = new Set(relevantTeams.map((t) => t.id));
 
   // Style constants
-  const primaryHeaderFill: ExcelJS.Fill = {
+  const primaryNavyFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF073763" }, // DIU Institutional Dark Navy
+  };
+  const secondaryHeaderFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FF0B132B" }, // Deep Navy
+  };
+  const tableHeaderFill: ExcelJS.Fill = {
     type: "pattern",
     pattern: "solid",
     fgColor: { argb: "FF0066B3" }, // DIU Blue
   };
-  const headerFont: Partial<ExcelJS.Font> = {
+  const headerFontWhite: Partial<ExcelJS.Font> = {
     name: "Calibri",
     size: 11,
     bold: true,
     color: { argb: "FFFFFFFF" },
   };
   const thinBorder: Partial<ExcelJS.Borders> = {
-    top: { style: "thin", color: { argb: "FFD0D7DE" } },
-    left: { style: "thin", color: { argb: "FFD0D7DE" } },
-    bottom: { style: "thin", color: { argb: "FFD0D7DE" } },
-    right: { style: "thin", color: { argb: "FFD0D7DE" } },
+    top: { style: "thin", color: { argb: "FFBFBFBF" } },
+    left: { style: "thin", color: { argb: "FFBFBFBF" } },
+    bottom: { style: "thin", color: { argb: "FFBFBFBF" } },
+    right: { style: "thin", color: { argb: "FFBFBFBF" } },
   };
 
   // ====================================================================
-  // SHEET 1: Team Summary
+  // PRIMARY SHEET: Presentation Group List (Official DIU Layout)
+  // Columns: Group Serial | Student name | Student ID | Topic name
+  // Rule: If topic is disabled, topic row/cells are created but empty ("")
+  // ====================================================================
+  const presSheet = workbook.addWorksheet("Presentation Group List", {
+    views: [{ state: "frozen", ySplit: 2 }],
+  });
+
+  presSheet.columns = [
+    { key: "serial", width: 16 },
+    { key: "student_name", width: 34 },
+    { key: "student_id", width: 20 },
+    { key: "topic_name", width: 34 },
+  ];
+
+  // Row 1: Merged Title "Presentation Group List"
+  presSheet.mergeCells("A1:D1");
+  const titleCell = presSheet.getCell("A1");
+  titleCell.value = "Presentation Group List";
+  titleCell.fill = primaryNavyFill;
+  titleCell.font = {
+    name: "Calibri",
+    size: 13,
+    bold: true,
+    color: { argb: "FFFFFFFF" },
+  };
+  titleCell.alignment = { vertical: "middle", horizontal: "center" };
+  presSheet.getRow(1).height = 30;
+  for (let c = 1; c <= 4; c++) {
+    presSheet.getRow(1).getCell(c).border = thinBorder;
+  }
+
+  // Row 2: Column Headers
+  const headerRow2 = presSheet.getRow(2);
+  headerRow2.values = ["Group Serial", "Student name", "Student ID", "Topic name"];
+  headerRow2.height = 24;
+  for (let c = 1; c <= 4; c++) {
+    const cell = headerRow2.getCell(c);
+    cell.fill = secondaryHeaderFill;
+    cell.font = headerFontWhite;
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+    cell.border = thinBorder;
+  }
+
+  let presRowIndex = 3;
+
+  // Render Presentation Groups across offerings
+  for (const offering of offerings) {
+    const offeringTeams = relevantTeams
+      .filter((t) => t.course_offering_id === offering.id)
+      .sort((a, b) => (a.presentation_number || 0) - (b.presentation_number || 0));
+
+    const isTopicEnabled = offering.topic_enabled === true;
+
+    // Calculate max presentation slots (e.g. 10 or 20, or highest team number)
+    const maxSlotNumber = Math.max(
+      offering.max_teams_limit || 10,
+      ...offeringTeams.map((t) => t.presentation_number || 0)
+    );
+
+    // Map slot number to team
+    const teamsBySlot = new Map<number, Team>();
+    const unslottedTeams: Team[] = [];
+
+    for (const t of offeringTeams) {
+      if (t.presentation_number && t.presentation_number > 0) {
+        teamsBySlot.set(t.presentation_number, t);
+      } else {
+        unslottedTeams.push(t);
+      }
+    }
+
+    // Fill unslotted teams into vacant slots if any
+    for (let s = 1; s <= maxSlotNumber && unslottedTeams.length > 0; s++) {
+      if (!teamsBySlot.has(s)) {
+        teamsBySlot.set(s, unslottedTeams.shift()!);
+      }
+    }
+
+    const totalSlotsToRender = Math.max(maxSlotNumber, offeringTeams.length);
+
+    for (let slotNum = 1; slotNum <= totalSlotsToRender; slotNum++) {
+      const team = teamsBySlot.get(slotNum);
+      const capacity = team?.capacity || offering.max_team_capacity || 5;
+      const activeMembers = team
+        ? [...(team.memberships || [])]
+            .filter((m) => m.status === "ACTIVE")
+            .sort((a, b) => (a.role === "LEADER" ? -1 : b.role === "LEADER" ? 1 : 0))
+        : [];
+      const rowCount = Math.max(capacity, activeMembers.length, 1);
+
+      const startRow = presRowIndex;
+      const endRow = startRow + rowCount - 1;
+
+      // Group Serial (Col A) - Merged across team member rows
+      presSheet.mergeCells(startRow, 1, endRow, 1);
+      const serialCell = presSheet.getCell(startRow, 1);
+      serialCell.value = slotNum;
+      serialCell.alignment = { vertical: "middle", horizontal: "center" };
+      serialCell.font = { name: "Calibri", size: 11, bold: true };
+
+      // Topic name (Col D) - Merged across team member rows
+      // CRITICAL RULE: If topic is disabled, topic row/cell is created but empty ("")
+      presSheet.mergeCells(startRow, 4, endRow, 4);
+      const topicCell = presSheet.getCell(startRow, 4);
+      const topicText = isTopicEnabled && team?.topic ? team.topic.trim() : "";
+      topicCell.value = topicText;
+      topicCell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+      topicCell.font = { name: "Calibri", size: 11 };
+
+      // Render individual student member rows (Col B & Col C)
+      for (let i = 0; i < rowCount; i++) {
+        const r = startRow + i;
+        const row = presSheet.getRow(r);
+        row.height = 20;
+
+        const mem = activeMembers[i];
+        const studentName = mem?.student?.full_name || "";
+        const studentId = mem?.student?.student_id || "";
+
+        const nameCell = presSheet.getCell(r, 2);
+        nameCell.value = studentName;
+        nameCell.alignment = { vertical: "middle", horizontal: "left" };
+        nameCell.font = { name: "Calibri", size: 11 };
+
+        const idCell = presSheet.getCell(r, 3);
+        idCell.value = studentId;
+        idCell.alignment = { vertical: "middle", horizontal: "center" };
+        idCell.font = { name: "Calibri", size: 11 };
+
+        // Ensure complete borders on all cells in the row
+        for (let c = 1; c <= 4; c++) {
+          presSheet.getCell(r, c).border = thinBorder;
+        }
+      }
+
+      presRowIndex = endRow + 1;
+    }
+  }
+
+  // ====================================================================
+  // SHEET 2: Team Summary
   // ====================================================================
   const sheet1 = workbook.addWorksheet("Team Summary", {
     views: [{ state: "frozen", ySplit: 1 }],
@@ -73,19 +224,22 @@ export async function generateTeamsExcelWorkbook(
   ];
 
   sheet1.getRow(1).eachCell((cell) => {
-    cell.fill = primaryHeaderFill;
-    cell.font = headerFont;
+    cell.fill = tableHeaderFill;
+    cell.font = headerFontWhite;
     cell.alignment = { vertical: "middle", horizontal: "center" };
     cell.border = thinBorder;
   });
   sheet1.getRow(1).height = 26;
 
   relevantTeams.forEach((team, idx) => {
+    const isTopicEnabled = team.course_offering?.topic_enabled === true;
+    const topicVal = isTopicEnabled && team.topic ? team.topic.trim() : "";
+
     const row = sheet1.addRow({
       serial: idx + 1,
       presentation_number: team.presentation_number ? `Team #${team.presentation_number}` : `Slot ${idx + 1}`,
       team_name: team.team_name,
-      topic: team.topic || "N/A",
+      topic: topicVal, // Empty string if disabled or unset, never "N/A"
       course_code: team.course_offering?.course?.code || "N/A",
       batch: DEPARTMENT_CONFIG.batch,
       section: team.course_offering?.section || "N/A",
@@ -109,7 +263,7 @@ export async function generateTeamsExcelWorkbook(
   };
 
   // ====================================================================
-  // SHEET 2: Student Details
+  // SHEET 3: Student Details
   // ====================================================================
   const sheet2 = workbook.addWorksheet("Student Details", {
     views: [{ state: "frozen", ySplit: 1 }],
@@ -130,8 +284,8 @@ export async function generateTeamsExcelWorkbook(
   ];
 
   sheet2.getRow(1).eachCell((cell) => {
-    cell.fill = primaryHeaderFill;
-    cell.font = headerFont;
+    cell.fill = tableHeaderFill;
+    cell.font = headerFontWhite;
     cell.alignment = { vertical: "middle", horizontal: "center" };
     cell.border = thinBorder;
   });
@@ -172,7 +326,7 @@ export async function generateTeamsExcelWorkbook(
   };
 
   // ====================================================================
-  // SHEET 3: Registration Overview
+  // SHEET 4: Registration Overview
   // ====================================================================
   const sheet3 = workbook.addWorksheet("Registration Overview", {
     views: [{ state: "frozen", ySplit: 1 }],
@@ -194,8 +348,8 @@ export async function generateTeamsExcelWorkbook(
   ];
 
   sheet3.getRow(1).eachCell((cell) => {
-    cell.fill = primaryHeaderFill;
-    cell.font = headerFont;
+    cell.fill = tableHeaderFill;
+    cell.font = headerFontWhite;
     cell.alignment = { vertical: "middle", horizontal: "center" };
     cell.border = thinBorder;
   });
@@ -241,8 +395,18 @@ export async function importTeamsFromExcelBuffer(
   offeringId?: string
 ): Promise<{ teamsCreated: number; studentsCreated: number; message: string }> {
   const workbook = new ExcelJS.Workbook();
-  // ExcelJS accepts buffer directly
   await workbook.xlsx.load(buffer as any);
+
+  let targetOffering = offeringId ? db.offerings.find((o) => o.id === offeringId) : db.offerings[0];
+  if (!targetOffering) {
+    throw new Error("No course offering available to import teams into. Please create one first.");
+  }
+
+  // Check if "Presentation Group List" sheet is present
+  const presListSheet = workbook.getWorksheet("Presentation Group List");
+  if (presListSheet) {
+    return importFromPresentationGroupSheet(presListSheet, targetOffering);
+  }
 
   const sheet =
     workbook.getWorksheet("Student Details") ||
@@ -251,13 +415,8 @@ export async function importTeamsFromExcelBuffer(
 
   if (!sheet) throw new Error("No worksheet found in uploaded Excel file.");
 
-  let targetOffering = offeringId ? db.offerings.find((o) => o.id === offeringId) : db.offerings[0];
-  if (!targetOffering) {
-    throw new Error("No course offering available to import teams into. Please create one first.");
-  }
-
   const rows: { studentName: string; studentId: string; teamName: string; role: "LEADER" | "MEMBER" }[] = [];
-  
+
   sheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return; // Skip headers
     const name = row.getCell(2).text?.trim();
@@ -279,6 +438,78 @@ export async function importTeamsFromExcelBuffer(
     throw new Error("No valid student/team records found in the uploaded Excel workbook.");
   }
 
+  return persistImportedTeams(rows, targetOffering);
+}
+
+function importFromPresentationGroupSheet(
+  sheet: ExcelJS.Worksheet,
+  targetOffering: any
+): { teamsCreated: number; studentsCreated: number; message: string } {
+  // Presentation Group List structure:
+  // Row 1: "Presentation Group List"
+  // Row 2: "Group Serial", "Student name", "Student ID", "Topic name"
+  // Row 3+: Data
+  const rows: {
+    studentName: string;
+    studentId: string;
+    teamName: string;
+    role: "LEADER" | "MEMBER";
+    presentationNumber?: number;
+    topic?: string;
+  }[] = [];
+
+  let currentSerial = 1;
+  let currentTopic = "";
+
+  sheet.eachRow((row, rowNumber) => {
+    if (rowNumber <= 2) return; // Skip title and headers
+
+    const rawSerial = row.getCell(1).text?.trim();
+    if (rawSerial && !isNaN(parseInt(rawSerial, 10))) {
+      currentSerial = parseInt(rawSerial, 10);
+    }
+
+    const rawTopic = row.getCell(4).text?.trim();
+    if (rawTopic && rawTopic !== "Topic name") {
+      currentTopic = rawTopic;
+    } else if (rawSerial && !rawTopic) {
+      currentTopic = "";
+    }
+
+    const name = row.getCell(2).text?.trim();
+    const id = row.getCell(3).text?.trim();
+
+    if (name && id && id !== "Student ID" && id !== "[PROTECTED]") {
+      const isLeader = !rows.some((r) => r.presentationNumber === currentSerial);
+      rows.push({
+        studentName: name,
+        studentId: id,
+        teamName: `Team ${currentSerial}`,
+        role: isLeader ? "LEADER" : "MEMBER",
+        presentationNumber: currentSerial,
+        topic: currentTopic || undefined,
+      });
+    }
+  });
+
+  if (rows.length === 0) {
+    throw new Error("No valid student records found in the Presentation Group List worksheet.");
+  }
+
+  return persistImportedTeams(rows, targetOffering);
+}
+
+function persistImportedTeams(
+  rows: {
+    studentName: string;
+    studentId: string;
+    teamName: string;
+    role: "LEADER" | "MEMBER";
+    presentationNumber?: number;
+    topic?: string;
+  }[],
+  targetOffering: any
+): { teamsCreated: number; studentsCreated: number; message: string } {
   const teamGroups: Record<string, typeof rows> = {};
   for (const r of rows) {
     if (!teamGroups[r.teamName]) teamGroups[r.teamName] = [];
@@ -296,20 +527,24 @@ export async function importTeamsFromExcelBuffer(
     );
 
     if (!team) {
-      const takenNums = new Set(
-        db.teams
-          .filter((t) => t.course_offering_id === targetOffering.id)
-          .map((t) => t.presentation_number)
-      );
-      let nextNum = 1;
-      while (takenNums.has(nextNum)) nextNum++;
+      const presNum = members[0]?.presentationNumber || (() => {
+        const takenNums = new Set(
+          db.teams
+            .filter((t) => t.course_offering_id === targetOffering.id)
+            .map((t) => t.presentation_number)
+        );
+        let nextNum = 1;
+        while (takenNums.has(nextNum)) nextNum++;
+        return nextNum;
+      })();
 
       team = {
         id: `team-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         course_offering_id: targetOffering.id,
-        presentation_number: nextNum,
+        presentation_number: presNum,
         team_name: tName,
         capacity: Math.max(members.length, targetOffering.min_team_capacity || 2),
+        topic: targetOffering.topic_enabled ? members[0]?.topic || null : null,
         leader_membership_id: null,
         status: members.length >= (targetOffering.max_team_capacity || 5) ? "FULL" : "OPEN",
         created_at: new Date().toISOString(),
