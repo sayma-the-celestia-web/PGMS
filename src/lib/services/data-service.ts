@@ -289,6 +289,7 @@ export class DataService {
   static async createSemester(
     input: Omit<Semester, "id" | "created_at" | "updated_at">
   ): Promise<Semester> {
+    await this.syncFromCloud();
     const newSem: Semester = {
       id: `sem-${Date.now()}`,
       ...input,
@@ -297,14 +298,20 @@ export class DataService {
     };
 
     if (this.isSupabaseConfigured()) {
-      const client = createAdminSupabaseClient();
-      if (client) {
-        const { data } = await client.from("semesters").insert(newSem).select().single();
-        if (data) return data;
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          await client.from("semesters").insert(newSem);
+        }
+      } catch (e) {
+        console.warn("Supabase DBMS create semester fallback:", e);
       }
     }
 
     db.semesters.push(newSem);
+    db.saveToDisk();
+    await this.syncToCloud();
+
     await this.logAuditEvent({
       action: "CREATE_SEMESTER",
       targetType: "SEMESTER",
@@ -318,9 +325,24 @@ export class DataService {
     id: string,
     updates: Partial<Omit<Semester, "id" | "created_at" | "updated_at">>
   ): Promise<Semester | null> {
+    await this.syncFromCloud();
     const sem = db.semesters.find((s) => s.id === id);
     if (!sem) return null;
     Object.assign(sem, updates, { updated_at: new Date().toISOString() });
+
+    if (this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          await client.from("semesters").update(updates).eq("id", id);
+        }
+      } catch (e) {
+        console.warn("Supabase DBMS update semester fallback:", e);
+      }
+    }
+
+    db.saveToDisk();
+    await this.syncToCloud();
 
     await this.logAuditEvent({
       action: "UPDATE_SEMESTER",
@@ -353,14 +375,29 @@ export class DataService {
   static async createCourse(
     input: Omit<Course, "id" | "created_at" | "updated_at">
   ): Promise<Course> {
+    await this.syncFromCloud();
     const newCourse: Course = {
       id: `crs-${Date.now()}`,
       ...input,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+
+    if (this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          await client.from("courses").insert(newCourse);
+        }
+      } catch (e) {
+        console.warn("Supabase DBMS create course fallback:", e);
+      }
+    }
+
     db.courses.push(newCourse);
     db.saveToDisk();
+    await this.syncToCloud();
+
     await this.logAuditEvent({
       action: "CREATE_COURSE",
       targetType: "COURSE",
@@ -374,10 +411,25 @@ export class DataService {
     id: string,
     updates: Partial<Omit<Course, "id" | "created_at" | "updated_at">>
   ): Promise<Course | null> {
+    await this.syncFromCloud();
     const course = db.courses.find((c) => c.id === id);
     if (!course) return null;
     Object.assign(course, updates, { updated_at: new Date().toISOString() });
+
+    if (this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          await client.from("courses").update(updates).eq("id", id);
+        }
+      } catch (e) {
+        console.warn("Supabase DBMS update course fallback:", e);
+      }
+    }
+
     db.saveToDisk();
+    await this.syncToCloud();
+
     await this.logAuditEvent({
       action: "UPDATE_COURSE",
       targetType: "COURSE",
@@ -388,24 +440,41 @@ export class DataService {
   }
 
   static async deleteCourse(id: string): Promise<boolean> {
+    await this.syncFromCloud();
     const courseIdx = db.courses.findIndex((c) => c.id === id);
     if (courseIdx === -1) throw new Error("Course not found");
+
+    const course = db.courses[courseIdx];
+
+    if (this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          await client.from("courses").delete().eq("id", id);
+        }
+      } catch (e) {
+        console.warn("Supabase DBMS delete course fallback:", e);
+      }
+    }
 
     const offeringIds = db.offerings.filter((o) => o.course_id === id).map((o) => o.id);
     const teamIds = db.teams.filter((t) => offeringIds.includes(t.course_offering_id)).map((t) => t.id);
 
     db.memberships = db.memberships.filter((m) => !teamIds.includes(m.team_id));
-    db.credentials = db.credentials.filter((c) => !teamIds.includes(c.team_id || ""));
+    db.credentials = (db.credentials || []).filter((c) => !teamIds.includes(c.team_id || ""));
+    db.joinRequests = (db.joinRequests || []).filter((r) => !teamIds.includes(r.team_id));
     db.teams = db.teams.filter((t) => !offeringIds.includes(t.course_offering_id));
     db.offerings = db.offerings.filter((o) => o.course_id !== id);
     db.courses.splice(courseIdx, 1);
+
     db.saveToDisk();
+    await this.syncToCloud();
 
     await this.logAuditEvent({
       action: "DELETE_COURSE",
       targetType: "COURSE",
       targetId: id,
-      details: { courseId: id },
+      details: { courseId: id, code: course.code },
     });
     return true;
   }
@@ -554,6 +623,18 @@ export class DataService {
     // Updating offering configuration strictly applies to future registrations.
     // Existing registered teams, active memberships, and presentation slots remain fully preserved.
     Object.assign(offering, updates, { updated_at: new Date().toISOString() });
+
+    if (this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          await client.from("course_offerings").update(updates).eq("id", id);
+        }
+      } catch (e) {
+        console.warn("Supabase DBMS update offering fallback:", e);
+      }
+    }
+
     db.saveToDisk();
     await this.syncToCloud();
     await this.logAuditEvent({
@@ -563,6 +644,42 @@ export class DataService {
       details: updates,
     });
     return this.getCourseOfferingById(id);
+  }
+
+  static async deleteCourseOffering(id: string): Promise<boolean> {
+    await this.syncFromCloud();
+    const offeringIdx = db.offerings.findIndex((o) => o.id === id);
+    if (offeringIdx === -1) throw new Error("Course offering not found");
+
+    const teamIds = db.teams.filter((t) => t.course_offering_id === id).map((t) => t.id);
+
+    if (this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          await client.from("course_offerings").delete().eq("id", id);
+        }
+      } catch (e) {
+        console.warn("Supabase DBMS delete offering fallback:", e);
+      }
+    }
+
+    db.memberships = db.memberships.filter((m) => !teamIds.includes(m.team_id));
+    db.credentials = (db.credentials || []).filter((c) => !teamIds.includes(c.team_id || ""));
+    db.joinRequests = (db.joinRequests || []).filter((r) => r.course_offering_id !== id);
+    db.teams = db.teams.filter((t) => t.course_offering_id !== id);
+    db.offerings.splice(offeringIdx, 1);
+
+    db.saveToDisk();
+    await this.syncToCloud();
+
+    await this.logAuditEvent({
+      action: "DELETE_COURSE_OFFERING",
+      targetType: "COURSE_OFFERING",
+      targetId: id,
+      details: { offeringId: id },
+    });
+    return true;
   }
 
   // -------------------------------------------------------------
@@ -1770,14 +1887,44 @@ export class DataService {
       capacity?: number;
       status?: "OPEN" | "FULL" | "CLOSED";
       leader_membership_id?: string;
+      presentation_number?: number;
+      topic?: string | null;
+      slide_link?: string | null;
     }
   ): Promise<Team> {
+    await this.syncFromCloud();
     const team = db.teams.find((t) => t.id === teamId);
     if (!team) throw new Error("Team not found");
 
     if (updates.team_name) team.team_name = updates.team_name.trim();
     if (updates.capacity) team.capacity = updates.capacity;
     if (updates.status) team.status = updates.status;
+
+    if (updates.presentation_number !== undefined) {
+      const slotNum = Number(updates.presentation_number);
+      if (slotNum > 0) {
+        const collision = db.teams.find(
+          (t) =>
+            t.id !== teamId &&
+            t.course_offering_id === team.course_offering_id &&
+            t.presentation_number === slotNum
+        );
+        if (collision) {
+          throw new Error(
+            `Presentation Slot #${slotNum} is already assigned to "${collision.team_name}".`
+          );
+        }
+        team.presentation_number = slotNum;
+      }
+    }
+
+    if (updates.topic !== undefined) {
+      team.topic = updates.topic ? updates.topic.trim() : null;
+    }
+
+    if (updates.slide_link !== undefined) {
+      team.slide_link = updates.slide_link ? updates.slide_link.trim() : null;
+    }
 
     if (updates.leader_membership_id) {
       const oldLeader = db.memberships.find(
@@ -1795,6 +1942,29 @@ export class DataService {
 
     team.updated_at = new Date().toISOString();
 
+    if (this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          await client
+            .from("teams")
+            .update({
+              team_name: team.team_name,
+              capacity: team.capacity,
+              status: team.status,
+              leader_membership_id: team.leader_membership_id,
+              presentation_number: team.presentation_number,
+              topic: team.topic,
+              slide_link: team.slide_link,
+              updated_at: team.updated_at,
+            })
+            .eq("id", teamId);
+        }
+      } catch (e) {
+        console.warn("Supabase DBMS team update fallback:", e);
+      }
+    }
+
     await this.logAuditEvent({
       action: "ADMIN_UPDATE_TEAM",
       targetType: "TEAM",
@@ -1807,10 +1977,111 @@ export class DataService {
     return (await this.getTeamById(team.id, true))!;
   }
 
+  static async adminAddMember(payload: {
+    teamId: string;
+    studentName: string;
+    studentId: string;
+  }): Promise<Team> {
+    await this.syncFromCloud();
+    const team = db.teams.find((t) => t.id === payload.teamId);
+    if (!team) throw new Error("Team not found");
+
+    const normId = normalizeStudentId(payload.studentId);
+    if (!normId) throw new Error("Please provide a valid Student ID");
+
+    // Check if student already registered in this course offering
+    const activeMembersInOffering = db.memberships.filter(
+      (m) => m.course_offering_id === team.course_offering_id && m.status === "ACTIVE"
+    );
+    const existingStudentIds = new Set(
+      db.students
+        .filter((s) => s.normalized_student_id === normId)
+        .map((s) => s.id)
+    );
+    const isAlreadyRegistered = activeMembersInOffering.some((m) =>
+      existingStudentIds.has(m.student_id)
+    );
+    if (isAlreadyRegistered) {
+      throw new Error(`Student with ID ${payload.studentId} is already registered in a team for this course.`);
+    }
+
+    let student = db.students.find((s) => s.normalized_student_id === normId);
+    if (!student) {
+      student = {
+        id: `stu-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        full_name: payload.studentName.trim(),
+        student_id: payload.studentId.trim(),
+        normalized_student_id: normId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      db.students.push(student);
+    }
+
+    const memId = `mem-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const newMembership: TeamMembership = {
+      id: memId,
+      team_id: team.id,
+      student_id: student.id,
+      course_offering_id: team.course_offering_id,
+      role: team.leader_membership_id ? "MEMBER" : "LEADER",
+      status: "ACTIVE",
+      joined_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    db.memberships.push(newMembership);
+    if (!team.leader_membership_id) {
+      team.leader_membership_id = memId;
+    }
+
+    const activeCount = db.memberships.filter(
+      (m) => m.team_id === team.id && m.status === "ACTIVE"
+    ).length;
+    if (activeCount >= team.capacity) {
+      team.status = "FULL";
+    }
+
+    team.updated_at = new Date().toISOString();
+
+    if (this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          await client.from("students").upsert({
+            id: student.id,
+            full_name: student.full_name,
+            student_id: student.student_id,
+            normalized_student_id: student.normalized_student_id,
+            created_at: student.created_at,
+            updated_at: student.updated_at,
+          });
+          await client.from("team_memberships").insert({
+            id: newMembership.id,
+            team_id: newMembership.team_id,
+            student_id: newMembership.student_id,
+            course_offering_id: newMembership.course_offering_id,
+            role: newMembership.role,
+            status: newMembership.status,
+            joined_at: newMembership.joined_at,
+            updated_at: newMembership.updated_at,
+          });
+        }
+      } catch (e) {
+        console.warn("Supabase DBMS add member fallback:", e);
+      }
+    }
+
+    db.saveToDisk();
+    await this.syncToCloud();
+
+    return (await this.getTeamById(team.id, true))!;
+  }
+
   static async adminRemoveMember(
     membershipId: string,
     reason = "Removed by Superadmin"
   ): Promise<{ success: boolean }> {
+    await this.syncFromCloud();
     const membership = db.memberships.find((m) => m.id === membershipId);
     if (!membership) throw new Error("Membership not found");
 
@@ -1834,6 +2105,20 @@ export class DataService {
       team.updated_at = new Date().toISOString();
     }
 
+    if (this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          await client
+            .from("team_memberships")
+            .update({ status: "REMOVED", updated_at: new Date().toISOString() })
+            .eq("id", membershipId);
+        }
+      } catch (e) {
+        console.warn("Supabase DBMS remove member fallback:", e);
+      }
+    }
+
     await this.logAuditEvent({
       action: "ADMIN_REMOVE_MEMBER",
       targetType: "MEMBERSHIP",
@@ -1847,13 +2132,26 @@ export class DataService {
   }
 
   static async deleteTeam(teamId: string): Promise<boolean> {
+    await this.syncFromCloud();
     const teamIdx = db.teams.findIndex((t) => t.id === teamId);
     if (teamIdx === -1) throw new Error("Team not found");
 
     const team = db.teams[teamIdx];
+
+    if (this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          await client.from("teams").delete().eq("id", teamId);
+        }
+      } catch (e) {
+        console.warn("Supabase DBMS delete team fallback:", e);
+      }
+    }
+
     db.memberships = db.memberships.filter((m) => m.team_id !== teamId);
-    db.joinRequests = db.joinRequests.filter((r) => r.team_id !== teamId);
-    db.credentials = db.credentials.filter((c) => c.team_id !== teamId);
+    db.joinRequests = (db.joinRequests || []).filter((r) => r.team_id !== teamId);
+    db.credentials = (db.credentials || []).filter((c) => c.team_id !== teamId);
     db.teams.splice(teamIdx, 1);
 
     await this.logAuditEvent({

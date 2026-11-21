@@ -260,6 +260,9 @@ export async function adminUpdateTeamAction(
     capacity?: number;
     status?: "OPEN" | "FULL" | "CLOSED";
     leader_membership_id?: string;
+    presentation_number?: number;
+    topic?: string | null;
+    slide_link?: string | null;
   }
 ) {
   try {
@@ -269,6 +272,33 @@ export async function adminUpdateTeamAction(
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to update team" };
+  }
+}
+
+export async function adminAddMemberAction(payload: {
+  teamId: string;
+  studentName: string;
+  studentId: string;
+}) {
+  try {
+    const result = await DataService.adminAddMember(payload);
+    revalidatePath("/superadmin/teams");
+    revalidatePath("/courses");
+    return { success: true, data: result };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "Failed to add member" };
+  }
+}
+
+export async function deleteCourseOfferingAction(offeringId: string) {
+  try {
+    await DataService.deleteCourseOffering(offeringId);
+    revalidatePath("/superadmin/registrations");
+    revalidatePath("/superadmin/teams");
+    revalidatePath("/courses");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "Failed to delete section offering" };
   }
 }
 

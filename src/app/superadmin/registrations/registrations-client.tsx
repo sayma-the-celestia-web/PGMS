@@ -3,14 +3,14 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { CourseOffering, Course, Semester, RegistrationStatus } from "@/types";
-import { createCourseOfferingAction, updateCourseOfferingAction } from "@/lib/actions";
+import { createCourseOfferingAction, updateCourseOfferingAction, deleteCourseOfferingAction } from "@/lib/actions";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RegistrationStatusBadge } from "@/components/ui/status-badge";
 import { formatDate, toLocalDateTimeString } from "@/lib/utils";
-import { PlusCircle, Layers, AlertTriangle, Clock, ArrowRight, ShieldCheck } from "lucide-react";
+import { PlusCircle, Layers, AlertTriangle, Clock, ArrowRight, ShieldCheck, Trash2 } from "lucide-react";
 
 interface Props {
   initialOfferings: CourseOffering[];
@@ -212,6 +212,27 @@ export function RegistrationsClient({
       setEditError(err?.message || "Failed to update offering");
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  const handleDeleteOffering = async (offeringId: string, courseCode?: string, section?: string) => {
+    if (
+      !confirm(
+        `Are you sure you want to permanently delete offering "${courseCode || "Course"} Sec ${section}"?\n\nThis will remove all registered teams and presentation slots in this section.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const res = await deleteCourseOfferingAction(offeringId);
+      if (res.success) {
+        setOfferings((prev) => prev.filter((o) => o.id !== offeringId));
+      } else {
+        alert(res.error || "Failed to delete course offering");
+      }
+    } catch (err: any) {
+      alert(err?.message || "Error deleting course offering");
     }
   };
 
@@ -620,17 +641,15 @@ export function RegistrationsClient({
                       <button
                         type="button"
                         onClick={() => handleTopicToggle(off.id, off.topic_enabled !== false)}
-                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-all cursor-pointer ${
-                          off.topic_enabled !== false
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-all cursor-pointer ${off.topic_enabled !== false
                             ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
                             : "bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200"
-                        }`}
+                          }`}
                         title="Click to toggle Team Topic Requirement"
                       >
                         <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            off.topic_enabled !== false ? "bg-emerald-600" : "bg-slate-400"
-                          }`}
+                          className={`w-1.5 h-1.5 rounded-full ${off.topic_enabled !== false ? "bg-emerald-600" : "bg-slate-400"
+                            }`}
                         />
                         <span>Topic: {off.topic_enabled !== false ? "Enabled" : "Disabled"}</span>
                         <span className="text-[9px] text-slate-400 font-normal underline">toggle</span>
@@ -662,6 +681,16 @@ export function RegistrationsClient({
                       className="h-8 text-xs font-medium"
                     >
                       Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteOffering(off.id, off.course?.code, off.section)}
+                      className="h-8 px-2 text-red-600 border-red-200 hover:bg-red-50 text-xs font-medium"
+                      title="Delete Section Offering"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                     <select
                       aria-label={`Change status for ${off.course?.code || "course"} section ${off.section}`}
