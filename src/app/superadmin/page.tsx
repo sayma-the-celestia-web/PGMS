@@ -137,7 +137,8 @@ export default async function SuperadminOverviewPage() {
           </div>
 
           <Card className="border border-slate-200 shadow-sm bg-white overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-xs text-left">
                 <thead className="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
                   <tr>
@@ -170,6 +171,35 @@ export default async function SuperadminOverviewPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Responsive Teams Cards */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {recentTeams.length === 0 ? (
+                <div className="p-6 text-center text-slate-400 text-xs">No teams registered yet.</div>
+              ) : (
+                recentTeams.map((team) => (
+                  <div key={team.id} className="p-3.5 space-y-2 bg-white">
+                    <div className="flex justify-between items-start gap-2">
+                      <div>
+                        <span className="font-bold text-xs text-diu-navy block">
+                          {team.team_name}
+                        </span>
+                        <span className="text-[11px] text-slate-500 font-medium">
+                          {team.course_offering?.course?.code} (Sec {team.course_offering?.section})
+                        </span>
+                      </div>
+                      <TeamStatusBadge status={team.status} />
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-100">
+                      <span>Leader: <strong>{team.leader?.student?.full_name || "Unassigned"}</strong></span>
+                      <span className="font-semibold text-diu-blue">
+                        {team.registered_count} / {team.capacity} members
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </Card>
         </div>

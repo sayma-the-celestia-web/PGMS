@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Team, TeamMembership, Student, TeamJoinRequest } from "@/types";
 import {
@@ -9,6 +9,9 @@ import {
   updateTeamSlideAction,
   toggleTeamStatusAction,
   handleJoinRequestAction,
+  leaderUpdateMemberAction,
+  leaderRemoveMemberAction,
+  leaderAddMemberAction,
 } from "@/lib/actions";
 import {
   Card,
@@ -35,15 +38,18 @@ import {
   LogOut,
   RefreshCw,
   Edit2,
+  Trash2,
   UploadCloud,
   Link as LinkIcon,
   FileText,
   UserCheck,
+  UserPlus,
   UserX,
   Clock,
   Sparkles,
   ExternalLink,
   Save,
+  X,
 } from "lucide-react";
 
 export function ManageClient() {
@@ -73,7 +79,50 @@ export function ManageClient() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
 
+  // Edit Member Modal State
+  const [editingMember, setEditingMember] = useState<TeamMembership | null>(null);
+  const [editMemberName, setEditMemberName] = useState("");
+  const [editMemberStudentId, setEditMemberStudentId] = useState("");
+  const [memberSaving, setMemberSaving] = useState(false);
+  const [memberError, setMemberError] = useState<string | null>(null);
+
+  // Remove Member Modal State
+  const [memberToRemove, setMemberToRemove] = useState<TeamMembership | null>(null);
+  const [removeLoading, setRemoveLoading] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+
+  // Direct Add Member State
+  const [showAddMemberForm, setShowAddMemberForm] = useState(false);
+  const [directMemberName, setDirectMemberName] = useState("");
+  const [directMemberId, setDirectMemberId] = useState("");
+  const [directAddLoading, setDirectAddLoading] = useState(false);
+
   const idRegex = /^\d{3}-\d{2}-\d{3}$/;
+
+  // Restore authenticated leader session across page reloads
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem("pgms_leader_session");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.name && parsed?.id) {
+          setLeaderName(parsed.name);
+          setLeaderId(parsed.id);
+          leaderLoginAction(parsed.name, parsed.id)
+            .then((res) => {
+              if (res.success && res.team) {
+                setTeam(res.team);
+                setLeaderStudent(res.leaderStudent || null);
+                setNewTeamName(res.team.team_name);
+                setSlideLink(res.team.slide_link || "");
+                setSlideFileName(res.team.slide_file_name || "");
+              }
+            })
+            .catch(() => { });
+        }
+      }
+    } catch { }
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,6 +152,12 @@ export function ManageClient() {
         setNewTeamName(res.team.team_name);
         setSlideLink(res.team.slide_link || "");
         setSlideFileName(res.team.slide_file_name || "");
+        try {
+          sessionStorage.setItem(
+            "pgms_leader_session",
+            JSON.stringify({ name: leaderName.trim(), id: formattedId })
+          );
+        } catch { }
       }
     } catch (err: any) {
       setLoginError(err?.message || "An unexpected error occurred during login.");
@@ -112,10 +167,17 @@ export function ManageClient() {
   };
 
   const handleLogout = () => {
+    try {
+      sessionStorage.removeItem("pgms_leader_session");
+    } catch { }
     setTeam(null);
     setLeaderStudent(null);
     setLeaderName("");
     setLeaderId("");
+    setEditingMember(null);
+    setMemberToRemove(null);
+    setRemoveError(null);
+    setShowAddMemberForm(false);
     setActionSuccess(null);
     setActionError(null);
   };
@@ -237,6 +299,155 @@ export function ManageClient() {
     }
   };
 
+  // Open Edit Member Modal
+  const openEditMemberModal = (m: TeamMembership) => {
+    setEditingMember(m);
+    setEditMemberName(m.student?.full_name || "");
+    setEditMemberStudentId(m.student?.student_id || "");
+    setMemberError(null);
+  };
+
+  // Save Edited Member
+  const handleSaveMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!team || !editingMember) return;
+
+    if (!editMemberName.trim()) {
+      setMemberError("Please enter member full name.");
+      return;
+    }
+
+    const formattedId = formatStudentId(editMemberStudentId);
+    setEditMemberStudentId(formattedId);
+    if (!idRegex.test(formattedId)) {
+      setMemberError("Student ID must follow DIU pattern: XXX-XX-XXX (e.g. 252-35-242).");
+      return;
+    }
+
+    setMemberSaving(true);
+    setMemberError(null);
+    setActionSuccess(null);
+    setActionError(null);
+
+    try {
+      const res = await leaderUpdateMemberAction({
+        teamId: team.id,
+        membershipId: editingMember.id,
+        fullName: editMemberName.trim(),
+        studentId: formattedId,
+      });
+
+      if (!res.success || !res.team) {
+        setMemberError(res.error || "Failed to update member.");
+      } else {
+        setTeam(res.team);
+        // If the edited member was the logged-in leader, keep state synchronized
+        if (editingMember.role === "LEADER" || editingMember.student_id === leaderStudent?.id) {
+          setLeaderName(editMemberName.trim());
+          setLeaderId(formattedId);
+          if (res.team.leader?.student) {
+            setLeaderStudent(res.team.leader.student);
+          }
+        }
+        setEditingMember(null);
+        setActionSuccess(`Member "${editMemberName.trim()}" updated successfully!`);
+      }
+    } catch (err: any) {
+      setMemberError(err?.message || "An unexpected error occurred.");
+    } finally {
+      setMemberSaving(false);
+    }
+  };
+
+  // Confirm and Remove Member
+  const handleConfirmRemoveMember = async () => {
+    if (!team || !memberToRemove) return;
+
+    setRemoveLoading(true);
+    setRemoveError(null);
+    setActionError(null);
+    setActionSuccess(null);
+
+    const removingId = memberToRemove.id;
+    const memberName = memberToRemove.student?.full_name || "Member";
+
+    try {
+      const res = await leaderRemoveMemberAction(team.id, removingId);
+
+      if (!res.success || !res.team) {
+        setRemoveError(res.error || "Failed to remove member.");
+      } else {
+        setTeam(res.team);
+
+        // If leader removed themselves, refresh leader credentials
+        if (memberToRemove.role === "LEADER") {
+          if (res.team.leader?.student) {
+            setLeaderStudent(res.team.leader.student);
+            setLeaderName(res.team.leader.student.full_name);
+            setLeaderId(res.team.leader.student.student_id);
+            try {
+              sessionStorage.setItem("pgms_leader_session", JSON.stringify({
+                name: res.team.leader.student.full_name,
+                id: res.team.leader.student.student_id,
+              }));
+            } catch { }
+          }
+        }
+        setMemberToRemove(null);
+        setRemoveError(null);
+        setActionSuccess(`Member "${memberName}" has been removed from the team.`);
+      }
+    } catch (err: any) {
+      setRemoveError(err?.message || "An unexpected error occurred.");
+    } finally {
+      setRemoveLoading(false);
+    }
+  };
+
+  // Direct Add Member
+  const handleDirectAddMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!team) return;
+
+    if (!directMemberName.trim()) {
+      setActionError("Please enter member full name.");
+      return;
+    }
+
+    const formattedId = formatStudentId(directMemberId);
+    setDirectMemberId(formattedId);
+    if (!idRegex.test(formattedId)) {
+      setActionError("Student ID must follow DIU pattern: XXX-XX-XXX (e.g. 252-35-242).");
+      return;
+    }
+
+    setDirectAddLoading(true);
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      const res = await leaderAddMemberAction({
+        teamId: team.id,
+        studentName: directMemberName.trim(),
+        studentId: formattedId,
+      });
+
+      if (!res.success || !res.team) {
+        setActionError(res.error || "Failed to add member.");
+      } else {
+        setTeam(res.team);
+        setDirectMemberName("");
+        setDirectMemberId("");
+        setShowAddMemberForm(false);
+        setActionSuccess(`Student "${directMemberName.trim()}" added to the team!`);
+      }
+    } catch (err: any) {
+      setActionError(err?.message || "An unexpected error occurred.");
+    } finally {
+      setDirectAddLoading(false);
+    }
+  };
+
   // -------------------------------------------------------------
   // VIEW: LOGIN FORM
   // -------------------------------------------------------------
@@ -311,7 +522,7 @@ export function ManageClient() {
               <Button
                 type="submit"
                 disabled={loginLoading}
-                className="w-full gap-2 font-semibold text-xs shadow-sm bg-diu-blue hover:bg-diu-navy"
+                className="w-full h-11 sm:h-10 gap-2 font-semibold text-sm sm:text-xs shadow-sm bg-diu-blue hover:bg-diu-navy"
               >
                 {loginLoading ? (
                   "Verifying Leader Credentials..."
@@ -350,10 +561,10 @@ export function ManageClient() {
     ? team.presentation_number === 1
       ? "1st Team"
       : team.presentation_number === 2
-      ? "2nd Team"
-      : team.presentation_number === 3
-      ? "3rd Team"
-      : `${team.presentation_number}th Team`
+        ? "2nd Team"
+        : team.presentation_number === 3
+          ? "3rd Team"
+          : `${team.presentation_number}th Team`
     : "Registered Team";
 
   return (
@@ -384,7 +595,7 @@ export function ManageClient() {
           variant="outline"
           size="sm"
           onClick={handleLogout}
-          className="bg-white/10 border-white/30 text-white hover:bg-white/20 text-xs gap-1.5 shrink-0"
+          className="w-full sm:w-auto bg-white/10 border-white/30 text-white hover:bg-white/20 text-xs gap-1.5 shrink-0 h-9 sm:h-8"
         >
           <LogOut className="w-3.5 h-3.5" />
           Log Out
@@ -509,8 +720,8 @@ export function ManageClient() {
                       {statusLoading
                         ? "Updating..."
                         : team.status === "OPEN"
-                        ? "Close Registration"
-                        : "Open Registration"}
+                          ? "Close Registration"
+                          : "Open Registration"}
                     </Button>
                   </div>
                 )}
@@ -608,32 +819,89 @@ export function ManageClient() {
           {/* MEMBERS ROSTER CARD */}
           <Card className="border border-slate-200 shadow-sm bg-white overflow-hidden">
             <CardHeader className="bg-slate-50 border-b border-slate-100 pb-3">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <CardTitle className="text-base text-diu-navy flex items-center gap-2">
                   <Users className="w-4 h-4 text-diu-blue" />
                   Registered Team Members ({activeMembers.length} / {team.capacity})
                 </CardTitle>
-                <span className="text-xs font-medium text-slate-500">
-                  {availableSlots} open slot{availableSlots !== 1 ? "s" : ""}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-slate-500">
+                    {availableSlots} open slot{availableSlots !== 1 ? "s" : ""}
+                  </span>
+                  {availableSlots > 0 && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowAddMemberForm(!showAddMemberForm)}
+                      className="h-8 px-2.5 text-xs text-diu-blue border-blue-200 hover:bg-blue-50 gap-1.5 font-semibold"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>{showAddMemberForm ? "Cancel Add" : "Add Member"}</span>
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardHeader>
+
+            {/* Direct Add Member Form */}
+            {showAddMemberForm && availableSlots > 0 && (
+              <form onSubmit={handleDirectAddMember} className="p-4 bg-blue-50/50 border-b border-blue-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-diu-navy flex items-center gap-1.5">
+                    <UserPlus className="w-3.5 h-3.5 text-diu-blue" />
+                    Add Student Member Directly
+                  </span>
+                  <span className="text-[11px] text-slate-500 font-medium">
+                    {availableSlots} slot{availableSlots > 1 ? "s" : ""} left
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <Input
+                    placeholder="Student Full Name"
+                    value={directMemberName}
+                    onChange={(e) => setDirectMemberName(e.target.value)}
+                    required
+                    className="h-9 text-xs bg-white"
+                  />
+                  <Input
+                    placeholder="Student ID (e.g. 252-35-102)"
+                    value={directMemberId}
+                    onChange={(e) => setDirectMemberId(e.target.value)}
+                    onBlur={() => {
+                      if (directMemberId) setDirectMemberId(formatStudentId(directMemberId));
+                    }}
+                    required
+                    className="h-9 text-xs font-mono bg-white"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={directAddLoading || !directMemberName.trim() || !directMemberId.trim()}
+                    size="sm"
+                    className="h-9 bg-diu-blue hover:bg-diu-navy text-white text-xs gap-1 font-semibold"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    {directAddLoading ? "Adding..." : "Add to Team"}
+                  </Button>
+                </div>
+              </form>
+            )}
 
             <div className="divide-y divide-slate-100">
               {activeMembers.map((m, idx) => (
                 <div
                   key={m.id}
-                  className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 hover:bg-slate-50/70 transition-colors"
+                  className="p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 hover:bg-slate-50/70 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <span className="w-6 h-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold shrink-0">
                       {idx + 1}
                     </span>
-                    <div>
-                      <p className="font-semibold text-slate-800 text-sm flex items-center gap-2">
-                        {m.student?.full_name}
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-800 text-sm flex items-center gap-2 truncate">
+                        <span className="truncate">{m.student?.full_name}</span>
                         {m.role === "LEADER" && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 shrink-0">
                             <Crown className="w-3 h-3" />
                             Team Leader
                           </span>
@@ -645,15 +913,42 @@ export function ManageClient() {
                     </div>
                   </div>
 
-                  <div className="text-left sm:text-right text-[11px] text-slate-400">
-                    <span>Joined: {formatDate(m.joined_at)}</span>
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                    <span className="text-[11px] text-slate-400 hidden xl:inline mr-1">
+                      Joined {formatDate(m.joined_at)}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditMemberModal(m)}
+                      className="h-8 px-2.5 text-xs text-slate-700 hover:text-diu-blue hover:bg-blue-50/50 border-slate-200 gap-1.5 font-medium"
+                      title="Edit Member Name or ID"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 text-diu-blue" />
+                      <span>Edit</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setMemberToRemove(m);
+                        setRemoveError(null);
+                      }}
+                      className="h-8 px-2.5 text-xs text-red-600 hover:bg-red-50 border-red-200 gap-1.5 font-medium"
+                      title="Remove Member from Team"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Remove</span>
+                    </Button>
                   </div>
                 </div>
               ))}
 
               {availableSlots > 0 && (
                 <div className="p-4 bg-slate-50/50 text-center text-xs text-slate-500 border-dashed">
-                  {availableSlots} vacancy slot{availableSlots > 1 ? "s" : ""} remaining in team. Other students can request to join from the courses directory.
+                  {availableSlots} vacancy slot{availableSlots > 1 ? "s" : ""} remaining in team. Other students can request to join from the courses directory or you can add them directly above.
                 </div>
               )}
             </div>
@@ -728,6 +1023,180 @@ export function ManageClient() {
           </Card>
         </div>
       </div>
+
+      {/* EDIT MEMBER MODAL */}
+      {editingMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+          <Card className="w-full max-w-md bg-white border border-slate-200 shadow-xl overflow-hidden">
+            <CardHeader className="bg-slate-50 border-b border-slate-100 pb-3 flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-base text-diu-navy font-heading flex items-center gap-2">
+                  <Edit2 className="w-4 h-4 text-diu-blue" />
+                  Edit Team Member
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500">
+                  Update student details for {editingMember.student?.full_name}
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setEditingMember(null)}
+                className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600 rounded-full"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </CardHeader>
+
+            <form onSubmit={handleSaveMember}>
+              <CardContent className="pt-4 space-y-4 text-xs">
+                {memberError && (
+                  <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                    <span>{memberError}</span>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="memberName" className="text-xs font-semibold text-slate-700">
+                    Student Full Name *
+                  </Label>
+                  <Input
+                    id="memberName"
+                    type="text"
+                    placeholder="e.g. Shakib Al Hasan"
+                    value={editMemberName}
+                    onChange={(e) => setEditMemberName(e.target.value)}
+                    required
+                    className="h-10 text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="memberStudentId" className="text-xs font-semibold text-slate-700">
+                    Student ID *
+                  </Label>
+                  <Input
+                    id="memberStudentId"
+                    type="text"
+                    placeholder="252-35-XXX"
+                    value={editMemberStudentId}
+                    onChange={(e) => setEditMemberStudentId(e.target.value)}
+                    onBlur={() => {
+                      if (editMemberStudentId) {
+                        setEditMemberStudentId(formatStudentId(editMemberStudentId));
+                      }
+                    }}
+                    required
+                    className="h-10 text-xs font-mono"
+                  />
+                  <p className="text-[11px] text-slate-400">
+                    Standard DIU pattern: XXX-XX-XXX (e.g. 252-35-242).
+                  </p>
+                </div>
+
+                {editingMember.role === "LEADER" && (
+                  <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px] flex items-center gap-2">
+                    <Crown className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>
+                      You are editing your own Leader account profile. Changes will update your active credentials.
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+
+              <CardFooter className="flex flex-col-reverse sm:flex-row justify-end gap-2 border-t border-slate-100 bg-slate-50/50 pt-3 pb-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditingMember(null)}
+                  className="w-full sm:w-auto h-10 sm:h-9 text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={memberSaving}
+                  size="sm"
+                  className="w-full sm:w-auto h-10 sm:h-9 bg-diu-blue hover:bg-diu-navy text-white text-xs font-semibold gap-1.5"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  {memberSaving ? "Saving..." : "Save Changes"}
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+        </div>
+      )}
+
+      {/* REMOVE MEMBER CONFIRMATION MODAL */}
+      {memberToRemove && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in">
+          <Card className="w-full max-w-md bg-white border border-slate-200 shadow-xl overflow-hidden">
+            <CardHeader className="bg-red-50/70 border-b border-red-100 pb-3">
+              <CardTitle className="text-base text-red-900 font-heading flex items-center gap-2">
+                <Trash2 className="w-4 h-4 text-red-600" />
+                Remove Team Member
+              </CardTitle>
+            </CardHeader>
+
+            <CardContent className="pt-4 space-y-3 text-xs text-slate-600">
+              {removeError && (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                  <span className="font-semibold">{removeError}</span>
+                </div>
+              )}
+
+              <p className="text-sm text-slate-800 font-medium">
+                Are you sure you want to remove{" "}
+                <strong className="text-diu-navy">{memberToRemove.student?.full_name}</strong>{" "}
+                (ID: <span className="font-mono font-semibold">{memberToRemove.student?.student_id}</span>) from the team?
+              </p>
+
+              {memberToRemove.role === "LEADER" ? (
+                <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-[11px] space-y-1">
+                  <p className="font-bold flex items-center gap-1.5 text-amber-800">
+                    <Crown className="w-3.5 h-3.5" /> Warning: Removing Team Leader
+                  </p>
+                  <p>
+                    Removing yourself will automatically promote the next active member to Team Leader. If you are the only member, this will close the team.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-500">
+                  This will immediately free up a slot in your team. New students will be able to request to join or be added directly.
+                </p>
+              )}
+            </CardContent>
+
+            <CardFooter className="flex flex-col-reverse sm:flex-row justify-end gap-2 border-t border-slate-100 bg-slate-50/50 pt-3 pb-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setMemberToRemove(null)}
+                disabled={removeLoading}
+                className="w-full sm:w-auto h-10 sm:h-9 text-xs"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={handleConfirmRemoveMember}
+                disabled={removeLoading}
+                className="w-full sm:w-auto h-10 sm:h-9 text-xs font-semibold gap-1.5 bg-red-600 hover:bg-red-700"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                {removeLoading ? "Removing Member..." : "Yes, Remove Member"}
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

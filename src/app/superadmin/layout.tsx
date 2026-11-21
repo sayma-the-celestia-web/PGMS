@@ -34,7 +34,7 @@ export default async function SuperadminLayout({
         </header>
 
         {/* Content area */}
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto">{children}</main>
+        <main className="flex-1 p-3 sm:p-6 md:p-8 overflow-y-auto">{children}</main>
       </div>
     </div>
   );

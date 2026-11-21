@@ -28,7 +28,7 @@ import {
   initialCredentials,
 } from "./seed-data";
 import { generateToken, hashToken, timingSafeMatch } from "../utils/crypto";
-import { normalizeStudentId } from "../utils";
+import { normalizeStudentId, formatStudentId } from "../utils";
 import { createAdminSupabaseClient } from "../supabase/server";
 
 const isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
@@ -38,10 +38,35 @@ const TMP_STORAGE_PATH = path.join("/tmp", "pgms-storage.json");
 const STORAGE_PATH = isServerless ? TMP_STORAGE_PATH : LOCAL_STORAGE_PATH;
 
 function isSupabaseConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key =
+  let url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  let key =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !key) {
+    try {
+      const fs = require("fs");
+      const path = require("path");
+      const envPath = path.resolve(process.cwd(), ".env.local");
+      if (fs.existsSync(envPath)) {
+        const content = fs.readFileSync(envPath, "utf8");
+        content.split("\n").forEach((line: string) => {
+          const trimmed = line.trim();
+          if (trimmed && !trimmed.startsWith("#")) {
+            const idx = trimmed.indexOf("=");
+            if (idx !== -1) {
+              const k = trimmed.slice(0, idx).trim();
+              const v = trimmed.slice(idx + 1).trim().replace(/^["']|["']$/g, "");
+              if (k === "NEXT_PUBLIC_SUPABASE_URL" && !url) url = v;
+              if (k === "SUPABASE_SERVICE_ROLE_KEY" && !process.env.SUPABASE_SERVICE_ROLE_KEY) key = v;
+              if (k === "NEXT_PUBLIC_SUPABASE_ANON_KEY" && !key) key = v;
+            }
+          }
+        });
+      }
+    } catch {}
+  }
+
   return !!(url && key && !url.includes("placeholder-project"));
 }
 
@@ -71,11 +96,12 @@ class InMemoryDB {
   private lastCloudSync = 0;
   private hasEverSyncedFromCloud = false;
   private cloudSyncPromise: Promise<void> | null = null;
+  private cloudUploadPromise: Promise<void> | null = null;
 
   constructor() {
     this.loadFromDisk();
     if (isSupabaseConfigured()) {
-      this.syncFromCloud(true).catch(() => {});
+      this.syncFromCloud(true).catch(() => { });
     }
   }
 
@@ -152,7 +178,7 @@ class InMemoryDB {
         if (fs.existsSync(LOCAL_STORAGE_DIR)) {
           fs.writeFileSync(LOCAL_STORAGE_PATH, raw, "utf-8");
         }
-      } catch {}
+      } catch { }
     }
 
     // Automatically synchronize state to Supabase cloud storage
@@ -169,28 +195,37 @@ class InMemoryDB {
       await this.cloudSyncPromise;
     }
 
-    // Safety guard: If we haven't synced from cloud yet, pull from cloud first
-    // so we never overwrite cloud storage with uninitialized in-memory state
-    if (!this.hasEverSyncedFromCloud) {
-      await this.syncFromCloud(true);
+    if (this.cloudUploadPromise) {
+      await this.cloudUploadPromise;
+      return;
     }
 
-    try {
-      const client = createAdminSupabaseClient();
-      if (!client) return;
+    this.cloudUploadPromise = (async () => {
+      try {
+        if (!this.hasEverSyncedFromCloud) {
+          await this.syncFromCloud(true);
+        }
 
-      const raw = this.toJSONString();
-      await client.storage
-        .from("pgms-state")
-        .upload("pgms-storage.json", raw, {
-          upsert: true,
-          contentType: "application/json",
-        });
-      this.lastCloudSync = Date.now();
-      this.hasEverSyncedFromCloud = true;
-    } catch (e) {
-      console.warn("Failed to sync storage to Supabase:", e);
-    }
+        const client = createAdminSupabaseClient();
+        if (!client) return;
+
+        const raw = this.toJSONString();
+        await client.storage
+          .from("pgms-state")
+          .upload("pgms-storage.json", raw, {
+            upsert: true,
+            contentType: "application/json",
+          });
+        this.lastCloudSync = Date.now();
+        this.hasEverSyncedFromCloud = true;
+      } catch (e) {
+        console.warn("Failed to sync storage to Supabase:", e);
+      } finally {
+        this.cloudUploadPromise = null;
+      }
+    })();
+
+    await this.cloudUploadPromise;
   }
 
   async syncFromCloud(force = false): Promise<void> {
@@ -212,29 +247,89 @@ class InMemoryDB {
         const client = createAdminSupabaseClient();
         if (!client) return;
 
-        const { data, error } = await client.storage
-          .from("pgms-state")
-          .download("pgms-storage.json");
+        let storageDownloaded = false;
+        try {
+          const { data, error } = await client.storage
+            .from("pgms-state")
+            .download("pgms-storage.json");
 
-        if (!error && data) {
-          const text = await data.text();
-          this.populateFromJSON(text);
-          this.lastCloudSync = Date.now();
-          this.hasEverSyncedFromCloud = true;
-          try {
-            const dir = path.dirname(STORAGE_PATH);
-            if (!fs.existsSync(dir)) {
-              fs.mkdirSync(dir, { recursive: true });
-            }
-            fs.writeFileSync(STORAGE_PATH, text, "utf-8");
-          } catch {}
-          if (STORAGE_PATH !== LOCAL_STORAGE_PATH) {
+          if (!error && data) {
+            const text = await data.text();
+            this.populateFromJSON(text);
+            this.lastCloudSync = Date.now();
+            this.hasEverSyncedFromCloud = true;
+            storageDownloaded = true;
             try {
-              if (fs.existsSync(LOCAL_STORAGE_DIR)) {
-                fs.writeFileSync(LOCAL_STORAGE_PATH, text, "utf-8");
+              const dir = path.dirname(STORAGE_PATH);
+              if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
               }
-            } catch {}
+              fs.writeFileSync(STORAGE_PATH, text, "utf-8");
+            } catch { }
+            if (STORAGE_PATH !== LOCAL_STORAGE_PATH) {
+              try {
+                if (fs.existsSync(LOCAL_STORAGE_DIR)) {
+                  fs.writeFileSync(LOCAL_STORAGE_PATH, text, "utf-8");
+                }
+              } catch { }
+            }
           }
+        } catch (storageErr) {
+          console.warn("Supabase storage download warning:", storageErr);
+        }
+
+        // Always merge DBMS data to ensure the in-memory state has the latest records
+        // (storage JSON may be stale relative to direct DB writes)
+        try {
+          const [stuRes, teamRes, memRes] = await Promise.all([
+            client.from("students").select("*"),
+            client.from("teams").select("*"),
+            client.from("team_memberships").select("*"),
+          ]);
+
+          if (stuRes.data && stuRes.data.length > 0) {
+            // Merge: add any DB records not already in memory
+            const stuMap = new Map(this.students.map((s) => [s.id, s]));
+            for (const s of stuRes.data as Student[]) {
+              stuMap.set(s.id, s); // DB record wins (freshest)
+            }
+            this.students = Array.from(stuMap.values());
+          }
+
+          if (teamRes.data && teamRes.data.length > 0) {
+            const teamMap = new Map(this.teams.map((t) => [t.id, t]));
+            for (const t of teamRes.data as Team[]) {
+              teamMap.set(t.id, t);
+            }
+            this.teams = Array.from(teamMap.values());
+          }
+
+          if (memRes.data && memRes.data.length > 0) {
+            const memMap = new Map(this.memberships.map((m) => [m.id, m]));
+            for (const m of memRes.data as TeamMembership[]) {
+              memMap.set(m.id, m);
+            }
+            this.memberships = Array.from(memMap.values());
+          }
+
+          // If storage also failed, fetch the remaining tables
+          if (!storageDownloaded || this.semesters.length === 0 || this.courses.length === 0) {
+            const [semRes, crsRes, offRes, reqRes] = await Promise.all([
+              client.from("semesters").select("*").order("start_date", { ascending: false }),
+              client.from("courses").select("*").order("code"),
+              client.from("course_offerings").select("*"),
+              client.from("team_join_requests").select("*"),
+            ]);
+            if (semRes.data && semRes.data.length > 0) this.semesters = semRes.data as Semester[];
+            if (crsRes.data && crsRes.data.length > 0) this.courses = crsRes.data as Course[];
+            if (offRes.data && offRes.data.length > 0) this.offerings = offRes.data as CourseOffering[];
+            if (reqRes.data && reqRes.data.length > 0) this.joinRequests = reqRes.data as TeamJoinRequest[];
+          }
+
+          this.hasEverSyncedFromCloud = true;
+          this.lastCloudSync = Date.now();
+        } catch (dbErr) {
+          console.warn("Supabase DBMS table sync warning:", dbErr);
         }
       } catch (e) {
         console.warn("Failed to pull from Supabase storage:", e);
@@ -253,7 +348,7 @@ class InMemoryDB {
     while (this.locks.has(key)) {
       await this.locks.get(key);
     }
-    let resolveLock: () => void = () => {};
+    let resolveLock: () => void = () => { };
     const lockPromise = new Promise<void>((resolve) => {
       resolveLock = resolve;
     });
@@ -737,13 +832,13 @@ export class DataService {
             ...m,
             student: student
               ? {
-                  id: student.id,
-                  full_name: student.full_name,
-                  student_id: "[PROTECTED]",
-                  normalized_student_id: "[PROTECTED]",
-                  created_at: student.created_at,
-                  updated_at: student.updated_at,
-                }
+                id: student.id,
+                full_name: student.full_name,
+                student_id: "[PROTECTED]",
+                normalized_student_id: "[PROTECTED]",
+                created_at: student.created_at,
+                updated_at: student.updated_at,
+              }
               : undefined,
           };
         });
@@ -776,12 +871,12 @@ export class DataService {
           ...m,
           student: student
             ? {
-                ...student,
-                student_id: includePrivate ? student.student_id : "[PROTECTED]",
-                normalized_student_id: includePrivate
-                  ? student.normalized_student_id
-                  : "[PROTECTED]",
-              }
+              ...student,
+              student_id: includePrivate ? student.student_id : "[PROTECTED]",
+              normalized_student_id: includePrivate
+                ? student.normalized_student_id
+                : "[PROTECTED]",
+            }
             : undefined,
         };
       });
@@ -984,7 +1079,7 @@ export class DataService {
 
       const teamId = `team-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       const leaderMembershipId = `mem-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      
+
       // If all slots are already filled, team is FULL.
       // If there are open slots (e.g. capacity is 5, registered with 2, 3, or 4 members):
       // Respect payload.isOpenForMembers toggle! If true -> "OPEN", if false -> "CLOSED".
@@ -1051,6 +1146,115 @@ export class DataService {
 
       // Persist to disk immediately so server restarts never lose registered teams
       db.saveToDisk();
+
+      // Mirror to Supabase PostgreSQL DBMS
+      if (this.isSupabaseConfigured()) {
+        try {
+          const client = createAdminSupabaseClient();
+          if (client) {
+            // Upsert leader student
+            const { data: exLeader } = await client
+              .from("students")
+              .select("id")
+              .eq("normalized_student_id", leaderStudent.normalized_student_id)
+              .maybeSingle();
+            if (exLeader) {
+              leaderStudent.id = exLeader.id;
+              await client.from("students").update({
+                full_name: leaderStudent.full_name,
+                student_id: leaderStudent.student_id,
+                updated_at: leaderStudent.updated_at,
+              }).eq("id", exLeader.id);
+            } else {
+              await client.from("students").insert({
+                id: leaderStudent.id,
+                full_name: leaderStudent.full_name,
+                student_id: leaderStudent.student_id,
+                normalized_student_id: leaderStudent.normalized_student_id,
+                created_at: leaderStudent.created_at,
+                updated_at: leaderStudent.updated_at,
+              });
+            }
+
+            // Upsert member students
+            for (const memStudent of memberStudents) {
+              const { data: exMem } = await client
+                .from("students")
+                .select("id")
+                .eq("normalized_student_id", memStudent.normalized_student_id)
+                .maybeSingle();
+              if (exMem) {
+                memStudent.id = exMem.id;
+                await client.from("students").update({
+                  full_name: memStudent.full_name,
+                  student_id: memStudent.student_id,
+                  updated_at: memStudent.updated_at,
+                }).eq("id", exMem.id);
+              } else {
+                await client.from("students").insert({
+                  id: memStudent.id,
+                  full_name: memStudent.full_name,
+                  student_id: memStudent.student_id,
+                  normalized_student_id: memStudent.normalized_student_id,
+                  created_at: memStudent.created_at,
+                  updated_at: memStudent.updated_at,
+                });
+              }
+            }
+
+            // Insert team (pass 1: leader_membership_id null to avoid FK cycle)
+            await client.from("teams").upsert({
+              id: newTeam.id,
+              course_offering_id: newTeam.course_offering_id,
+              presentation_number: newTeam.presentation_number,
+              team_name: newTeam.team_name,
+              capacity: newTeam.capacity,
+              topic: newTeam.topic,
+              leader_membership_id: null,
+              status: newTeam.status,
+              created_at: newTeam.created_at,
+              updated_at: newTeam.updated_at,
+            }, { onConflict: "id" });
+
+            // Insert leader membership
+            await client.from("team_memberships").upsert({
+              id: leaderMembershipId,
+              team_id: teamId,
+              student_id: leaderStudent.id,
+              course_offering_id: payload.courseOfferingId,
+              role: "LEADER",
+              status: "ACTIVE",
+              joined_at: newTeam.created_at,
+              updated_at: newTeam.updated_at,
+            }, { onConflict: "id" });
+
+            // Insert member memberships
+            for (const memStudent of memberStudents) {
+              const memObj = db.memberships.find(m => m.team_id === teamId && m.student_id === memStudent.id);
+              if (memObj) {
+                await client.from("team_memberships").upsert({
+                  id: memObj.id,
+                  team_id: teamId,
+                  student_id: memStudent.id,
+                  course_offering_id: payload.courseOfferingId,
+                  role: "MEMBER",
+                  status: "ACTIVE",
+                  joined_at: memObj.joined_at,
+                  updated_at: memObj.updated_at,
+                }, { onConflict: "id" });
+              }
+            }
+
+            // Pass 2: update leader_membership_id on team
+            await client.from("teams").update({
+              leader_membership_id: leaderMembershipId,
+            }).eq("id", teamId);
+          }
+        } catch (e) {
+          console.warn("Supabase DBMS team registration sync fallback:", e);
+        }
+      }
+
       await this.syncToCloud();
 
       const course = db.courses.find((c) => c.id === offering.course_id);
@@ -1086,8 +1290,8 @@ export class DataService {
     const cleanInputName = leaderName.trim().toLowerCase().replace(/\s+/g, " ");
     const rawIdDigits = leaderStudentId.replace(/\D/g, "");
 
-    // Find student record with resilient matching (normalized ID, raw ID, or pure digits)
-    const student = db.students.find((s) => {
+    // 1. Find student record with resilient matching (normalized ID, raw ID, or pure digits)
+    let student = db.students.find((s) => {
       const sNorm = s.normalized_student_id || normalizeStudentId(s.student_id);
       return (
         sNorm === normId ||
@@ -1095,6 +1299,28 @@ export class DataService {
         (rawIdDigits.length >= 6 && s.student_id.replace(/\D/g, "") === rawIdDigits)
       );
     });
+
+    // 2. Direct Supabase DBMS lookup fallback if not in memory
+    if (!student && this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          const { data: dbStudents } = await client
+            .from("students")
+            .select("*")
+            .or(`normalized_student_id.eq.${normId},student_id.eq.${leaderStudentId.trim()}`);
+          if (dbStudents && dbStudents.length > 0) {
+            const foundStudent = dbStudents[0];
+            student = foundStudent;
+            if (!db.students.some((s) => s.id === foundStudent.id)) {
+              db.students.push(foundStudent);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Supabase DBMS student lookup fallback error:", err);
+      }
+    }
 
     if (!student) {
       return {
@@ -1128,6 +1354,31 @@ export class DataService {
       );
     }
 
+    // Direct Supabase DBMS membership lookup fallback
+    if (!leaderMem && this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          const { data: dbMems } = await client
+            .from("team_memberships")
+            .select("*")
+            .eq("student_id", student.id)
+            .eq("status", "ACTIVE");
+          if (dbMems && dbMems.length > 0) {
+            const memsList = dbMems as TeamMembership[];
+            leaderMem = memsList.find((m: TeamMembership) => m.role === "LEADER") || memsList[0];
+            for (const m of memsList) {
+              if (!db.memberships.some((existing) => existing.id === m.id)) {
+                db.memberships.push(m);
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Supabase DBMS membership lookup fallback error:", err);
+      }
+    }
+
     if (!leaderMem) {
       return {
         success: false,
@@ -1135,7 +1386,28 @@ export class DataService {
       };
     }
 
-    const team = await this.getTeamById(leaderMem.team_id, true);
+    let team = await this.getTeamById(leaderMem.team_id, true);
+    if (!team && this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          const { data: dbTeam } = await client
+            .from("teams")
+            .select("*")
+            .eq("id", leaderMem.team_id)
+            .maybeSingle();
+          if (dbTeam) {
+            if (!db.teams.some((t) => t.id === dbTeam.id)) {
+              db.teams.push(dbTeam);
+            }
+            team = await this.getTeamById(dbTeam.id, true);
+          }
+        }
+      } catch (err) {
+        console.warn("Supabase DBMS team lookup fallback error:", err);
+      }
+    }
+
     if (!team) {
       return { success: false, error: "Associated team could not be loaded." };
     }
@@ -1293,6 +1565,7 @@ export class DataService {
     requestId: string,
     action: "ACCEPT" | "REJECT"
   ): Promise<{ success: boolean; message: string }> {
+    await this.syncFromCloud();
     const req = db.joinRequests.find((r) => r.id === requestId);
     if (!req) throw new Error("Join request not found");
     if (req.status !== "PENDING") {
@@ -1305,6 +1578,21 @@ export class DataService {
     if (action === "REJECT") {
       req.status = "REJECTED";
       req.updated_at = new Date().toISOString();
+      if (this.isSupabaseConfigured()) {
+        try {
+          const client = createAdminSupabaseClient();
+          if (client) {
+            await client.from("team_join_requests").update({
+              status: "REJECTED",
+              updated_at: req.updated_at,
+            }).eq("id", req.id);
+          }
+        } catch (e) {
+          console.warn("Supabase DBMS reject join request fallback:", e);
+        }
+      }
+      db.saveToDisk();
+      await this.syncToCloud();
       return { success: true, message: `Request from ${req.student_name} was rejected.` };
     }
 
@@ -1340,6 +1628,19 @@ export class DataService {
     if (alreadyRegistered) {
       req.status = "REJECTED";
       req.updated_at = new Date().toISOString();
+      if (this.isSupabaseConfigured()) {
+        try {
+          const client = createAdminSupabaseClient();
+          if (client) {
+            await client.from("team_join_requests").update({
+              status: "REJECTED",
+              updated_at: req.updated_at,
+            }).eq("id", req.id);
+          }
+        } catch { }
+      }
+      db.saveToDisk();
+      await this.syncToCloud();
       throw new Error(
         `Student ${req.student_name} (${req.student_id}) is already registered in another team for this course.`
       );
@@ -1347,7 +1648,7 @@ export class DataService {
 
     // Create active membership
     const memId = `mem-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    db.memberships.push({
+    const newMembership: TeamMembership = {
       id: memId,
       team_id: team.id,
       student_id: student.id,
@@ -1356,7 +1657,8 @@ export class DataService {
       status: "ACTIVE",
       joined_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    });
+    };
+    db.memberships.push(newMembership);
 
     req.status = "ACCEPTED";
     req.updated_at = new Date().toISOString();
@@ -1367,7 +1669,64 @@ export class DataService {
       team.status = "FULL";
     }
     team.updated_at = new Date().toISOString();
+
+    if (this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          const { data: existingDbStudent } = await client
+            .from("students")
+            .select("id")
+            .eq("normalized_student_id", normId)
+            .maybeSingle();
+
+          if (existingDbStudent) {
+            student.id = existingDbStudent.id;
+            newMembership.student_id = existingDbStudent.id;
+            await client.from("students").update({
+              full_name: student.full_name,
+              student_id: student.student_id,
+              updated_at: student.updated_at,
+            }).eq("id", existingDbStudent.id);
+          } else {
+            await client.from("students").insert({
+              id: student.id,
+              full_name: student.full_name,
+              student_id: student.student_id,
+              normalized_student_id: student.normalized_student_id,
+              created_at: student.created_at,
+              updated_at: student.updated_at,
+            });
+          }
+
+          await client.from("team_memberships").upsert({
+            id: newMembership.id,
+            team_id: newMembership.team_id,
+            student_id: newMembership.student_id,
+            course_offering_id: newMembership.course_offering_id,
+            role: newMembership.role,
+            status: newMembership.status,
+            joined_at: newMembership.joined_at,
+            updated_at: newMembership.updated_at,
+          });
+
+          await client.from("teams").update({
+            status: team.status,
+            updated_at: team.updated_at,
+          }).eq("id", team.id);
+
+          await client.from("team_join_requests").update({
+            status: "ACCEPTED",
+            updated_at: req.updated_at,
+          }).eq("id", req.id);
+        }
+      } catch (e) {
+        console.warn("Supabase DBMS handle join request fallback:", e);
+      }
+    }
+
     db.saveToDisk();
+    await this.syncToCloud();
 
     return {
       success: true,
@@ -2042,10 +2401,29 @@ export class DataService {
     studentId: string;
   }): Promise<Team> {
     await this.syncFromCloud();
-    const team = db.teams.find((t) => t.id === payload.teamId);
+    let team = db.teams.find((t) => t.id === payload.teamId);
+    if (!team && this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          const { data: dbTeam } = await client
+            .from("teams")
+            .select("*")
+            .eq("id", payload.teamId)
+            .maybeSingle();
+          if (dbTeam) {
+            team = dbTeam as Team;
+            if (!db.teams.some((t) => t.id === dbTeam.id)) {
+              db.teams.push(dbTeam as Team);
+            }
+          }
+        }
+      } catch (e) { }
+    }
     if (!team) throw new Error("Team not found");
 
-    const normId = normalizeStudentId(payload.studentId);
+    const cleanStudentId = formatStudentId(payload.studentId) || payload.studentId.trim();
+    const normId = normalizeStudentId(cleanStudentId);
     if (!normId) throw new Error("Please provide a valid Student ID");
 
     // Check if student already registered in this course offering
@@ -2054,7 +2432,7 @@ export class DataService {
     );
     const existingStudentIds = new Set(
       db.students
-        .filter((s) => s.normalized_student_id === normId)
+        .filter((s) => s.normalized_student_id === normId || normalizeStudentId(s.student_id) === normId)
         .map((s) => s.id)
     );
     const isAlreadyRegistered = activeMembersInOffering.some((m) =>
@@ -2064,12 +2442,52 @@ export class DataService {
       throw new Error(`Student with ID ${payload.studentId} is already registered in a team for this course.`);
     }
 
-    let student = db.students.find((s) => s.normalized_student_id === normId);
-    if (!student) {
+    // Look up student in memory or directly in Supabase DBMS
+    let student = db.students.find(
+      (s) => s.normalized_student_id === normId || normalizeStudentId(s.student_id) === normId
+    );
+    if (!student && this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          let { data: dbStu } = await client
+            .from("students")
+            .select("*")
+            .eq("normalized_student_id", normId)
+            .maybeSingle();
+          if (!dbStu) {
+            const { data: dbStuRaw } = await client
+              .from("students")
+              .select("*")
+              .eq("student_id", cleanStudentId)
+              .maybeSingle();
+            dbStu = dbStuRaw;
+          }
+          if (dbStu) {
+            student = dbStu as Student;
+            const existingIdx = db.students.findIndex((s) => s.id === dbStu!.id);
+            if (existingIdx !== -1) {
+              db.students[existingIdx] = student;
+            } else {
+              db.students.push(student);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Supabase student lookup warning:", err);
+      }
+    }
+
+    if (student) {
+      student.full_name = payload.studentName.trim();
+      student.student_id = cleanStudentId;
+      student.normalized_student_id = normId;
+      student.updated_at = new Date().toISOString();
+    } else {
       student = {
         id: `stu-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         full_name: payload.studentName.trim(),
-        student_id: payload.studentId.trim(),
+        student_id: cleanStudentId,
         normalized_student_id: normId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -2106,29 +2524,51 @@ export class DataService {
       try {
         const client = createAdminSupabaseClient();
         if (client) {
-          await client.from("students").upsert({
+          const { error: stuErr } = await client.from("students").upsert({
             id: student.id,
             full_name: student.full_name,
             student_id: student.student_id,
             normalized_student_id: student.normalized_student_id,
             created_at: student.created_at,
             updated_at: student.updated_at,
-          });
-          await client.from("team_memberships").insert({
+          }, { onConflict: "normalized_student_id" });
+          if (stuErr) console.error("Supabase student upsert error:", stuErr);
+
+          const { error: memErr } = await client.from("team_memberships").upsert({
             id: newMembership.id,
             team_id: newMembership.team_id,
-            student_id: newMembership.student_id,
+            student_id: student.id,
             course_offering_id: newMembership.course_offering_id,
             role: newMembership.role,
             status: newMembership.status,
             joined_at: newMembership.joined_at,
             updated_at: newMembership.updated_at,
-          });
+          }, { onConflict: "id" });
+          if (memErr) console.error("Supabase membership upsert error:", memErr);
+
+          const { error: teamErr } = await client.from("teams").update({
+            status: team.status,
+            leader_membership_id: team.leader_membership_id,
+            updated_at: team.updated_at,
+          }).eq("id", team.id);
+          if (teamErr) console.error("Supabase team update error:", teamErr);
         }
       } catch (e) {
         console.warn("Supabase DBMS add member fallback:", e);
       }
     }
+
+    await this.logAuditEvent({
+      action: "ADMIN_ADD_MEMBER",
+      targetType: "TEAM",
+      targetId: team.id,
+      details: {
+        team_id: team.id,
+        student_id: student.student_id,
+        full_name: student.full_name,
+        role: newMembership.role,
+      },
+    });
 
     db.saveToDisk();
     await this.syncToCloud();
@@ -2141,16 +2581,52 @@ export class DataService {
     reason = "Removed by Superadmin"
   ): Promise<{ success: boolean }> {
     await this.syncFromCloud();
-    const membership = db.memberships.find((m) => m.id === membershipId);
+    let membership = db.memberships.find((m) => m.id === membershipId);
+    if (!membership && this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          const { data: dbMem } = await client
+            .from("team_memberships")
+            .select("*")
+            .eq("id", membershipId)
+            .maybeSingle();
+          if (dbMem) {
+            membership = dbMem as TeamMembership;
+            if (!db.memberships.some((m) => m.id === dbMem.id)) {
+              db.memberships.push(dbMem as TeamMembership);
+            }
+          }
+        }
+      } catch (e) { }
+    }
     if (!membership) throw new Error("Membership not found");
 
-    const team = db.teams.find((t) => t.id === membership.team_id);
-    membership.status = "REMOVED";
-    membership.updated_at = new Date().toISOString();
+    let team = db.teams.find((t) => t.id === membership.team_id);
+    if (!team && this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          const { data: dbTeam } = await client
+            .from("teams")
+            .select("*")
+            .eq("id", membership.team_id)
+            .maybeSingle();
+          if (dbTeam) {
+            team = dbTeam as Team;
+            if (!db.teams.some((t) => t.id === dbTeam.id)) {
+              db.teams.push(dbTeam as Team);
+            }
+          }
+        }
+      } catch (e) { }
+    }
+
+    const studentId = membership.student_id;
 
     if (team) {
       const remaining = db.memberships.filter(
-        (m) => m.team_id === team.id && m.status === "ACTIVE"
+        (m) => m.team_id === team.id && m.id !== membershipId && m.status === "ACTIVE"
       );
       if (membership.role === "LEADER" && remaining.length > 0) {
         remaining[0].role = "LEADER";
@@ -2164,13 +2640,33 @@ export class DataService {
       team.updated_at = new Date().toISOString();
     }
 
+    // Physically DELETE from Supabase DBMS
     if (this.isSupabaseConfigured()) {
       try {
         const client = createAdminSupabaseClient();
         if (client) {
+          // Update team status and leader_membership_id in Supabase FIRST to prevent FK constraint violation
+          if (team) {
+            await client
+              .from("teams")
+              .update({
+                status: team.status,
+                leader_membership_id: team.leader_membership_id,
+                updated_at: team.updated_at,
+              })
+              .eq("id", team.id);
+          }
+
+          // Delete registration credentials referencing this membership
+          await client
+            .from("registration_credentials")
+            .delete()
+            .eq("membership_id", membershipId);
+
+          // Delete the membership completely from team_memberships
           await client
             .from("team_memberships")
-            .update({ status: "REMOVED", updated_at: new Date().toISOString() })
+            .delete()
             .eq("id", membershipId);
         }
       } catch (e) {
@@ -2178,11 +2674,17 @@ export class DataService {
       }
     }
 
+    // Physically remove from in-memory and disk memberships
+    db.memberships = db.memberships.filter((m) => m.id !== membershipId);
+    if (db.credentials) {
+      db.credentials = db.credentials.filter((c) => c.membership_id !== membershipId);
+    }
+
     await this.logAuditEvent({
       action: "ADMIN_REMOVE_MEMBER",
       targetType: "MEMBERSHIP",
       targetId: membershipId,
-      details: { reason, team_id: team?.id },
+      details: { reason, team_id: team?.id, student_id: studentId },
     });
     db.saveToDisk();
     await this.syncToCloud();
@@ -2269,15 +2771,43 @@ export class DataService {
     studentId: string,
     updates: { full_name?: string; student_id?: string }
   ): Promise<Student> {
+    await this.syncFromCloud();
     const student = db.students.find((s) => s.id === studentId);
     if (!student) throw new Error("Student not found");
 
     if (updates.full_name) student.full_name = updates.full_name.trim();
     if (updates.student_id) {
+      const normId = normalizeStudentId(updates.student_id);
+      if (!normId) throw new Error("Invalid student ID format");
+      const collision = db.students.find(
+        (s) => s.id !== studentId && (s.normalized_student_id === normId || normalizeStudentId(s.student_id) === normId)
+      );
+      if (collision) {
+        throw new Error(`Student ID "${updates.student_id}" is already assigned to ${collision.full_name}.`);
+      }
       student.student_id = updates.student_id.trim();
-      student.normalized_student_id = normalizeStudentId(updates.student_id);
+      student.normalized_student_id = normId;
     }
     student.updated_at = new Date().toISOString();
+
+    if (this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          await client
+            .from("students")
+            .update({
+              full_name: student.full_name,
+              student_id: student.student_id,
+              normalized_student_id: student.normalized_student_id,
+              updated_at: student.updated_at,
+            })
+            .eq("id", studentId);
+        }
+      } catch (e) {
+        console.warn("Supabase DBMS update student fallback:", e);
+      }
+    }
 
     await this.logAuditEvent({
       action: "ADMIN_UPDATE_STUDENT",
@@ -2286,7 +2816,174 @@ export class DataService {
       details: updates,
     });
 
+    db.saveToDisk();
+    await this.syncToCloud();
+
     return student;
+  }
+
+  static async leaderUpdateMember(payload: {
+    teamId: string;
+    membershipId: string;
+    fullName: string;
+    studentId: string;
+  }): Promise<{ success: boolean; team: Team }> {
+    await this.syncFromCloud();
+    const team = db.teams.find((t) => t.id === payload.teamId);
+    if (!team) throw new Error("Team not found.");
+
+    const membership = db.memberships.find((m) => m.id === payload.membershipId);
+    if (!membership) throw new Error("Membership not found.");
+    if (membership.team_id !== payload.teamId) {
+      throw new Error("Membership does not belong to this team.");
+    }
+
+    const student = db.students.find((s) => s.id === membership.student_id);
+    if (!student) throw new Error("Student record not found.");
+
+    const newNormId = normalizeStudentId(payload.studentId);
+    if (!newNormId) {
+      throw new Error("Student ID must follow DIU pattern: XXX-XX-XXX (e.g. 252-35-242).");
+    }
+
+    // Check collision with another student active in the same offering
+    const collision = db.students.find(
+      (s) => s.id !== student.id && (s.normalized_student_id === newNormId || normalizeStudentId(s.student_id) === newNormId)
+    );
+    if (collision) {
+      const activeInOffering = db.memberships.some(
+        (m) =>
+          m.student_id === collision.id &&
+          m.course_offering_id === team.course_offering_id &&
+          m.status === "ACTIVE" &&
+          m.id !== membership.id
+      );
+      if (activeInOffering) {
+        throw new Error(
+          `Student ID "${payload.studentId}" is already registered in another team in this section (${collision.full_name}).`
+        );
+      }
+    }
+
+    student.full_name = payload.fullName.trim();
+    student.student_id = payload.studentId.trim();
+    student.normalized_student_id = newNormId;
+    student.updated_at = new Date().toISOString();
+
+    if (this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          await client
+            .from("students")
+            .update({
+              full_name: student.full_name,
+              student_id: student.student_id,
+              normalized_student_id: student.normalized_student_id,
+              updated_at: student.updated_at,
+            })
+            .eq("id", student.id);
+        }
+      } catch (e) {
+        console.warn("Supabase DBMS update student fallback:", e);
+      }
+    }
+
+    await this.logAuditEvent({
+      action: "LEADER_UPDATE_MEMBER",
+      targetType: "STUDENT",
+      targetId: student.id,
+      details: {
+        team_id: team.id,
+        membership_id: membership.id,
+        full_name: student.full_name,
+        student_id: student.student_id,
+      },
+    });
+
+    db.saveToDisk();
+    await this.syncToCloud();
+
+    const updatedTeam = await this.getTeamById(team.id, true);
+    if (!updatedTeam) throw new Error("Team not found after update.");
+    return { success: true, team: updatedTeam };
+  }
+
+  static async leaderRemoveMember(
+    teamId: string,
+    membershipId: string
+  ): Promise<{ success: boolean; team: Team }> {
+    await this.syncFromCloud();
+    let team = db.teams.find((t) => t.id === teamId);
+    if (!team && this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          const { data: dbTeam } = await client
+            .from("teams")
+            .select("*")
+            .eq("id", teamId)
+            .maybeSingle();
+          if (dbTeam) {
+            team = dbTeam as Team;
+            if (!db.teams.some((t) => t.id === dbTeam.id)) {
+              db.teams.push(dbTeam as Team);
+            }
+          }
+        }
+      } catch (e) { }
+    }
+    if (!team) throw new Error("Team not found.");
+
+    let membership = db.memberships.find((m) => m.id === membershipId);
+    if (!membership && this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          const { data: dbMem } = await client
+            .from("team_memberships")
+            .select("*")
+            .eq("id", membershipId)
+            .maybeSingle();
+          if (dbMem) {
+            membership = dbMem as TeamMembership;
+            if (!db.memberships.some((m) => m.id === dbMem.id)) {
+              db.memberships.push(dbMem as TeamMembership);
+            }
+          }
+        }
+      } catch (e) { }
+    }
+    if (!membership) throw new Error("Membership not found.");
+    if (membership.team_id !== teamId) {
+      throw new Error("Membership does not belong to this team.");
+    }
+
+    await this.adminRemoveMember(membershipId, "Removed by Team Leader");
+
+    const updatedTeam = await this.getTeamById(teamId, true);
+    if (!updatedTeam) throw new Error("Team not found after update.");
+    return { success: true, team: updatedTeam };
+  }
+
+  static async leaderAddMember(payload: {
+    teamId: string;
+    studentName: string;
+    studentId: string;
+  }): Promise<{ success: boolean; team: Team }> {
+    await this.syncFromCloud();
+    const team = db.teams.find((t) => t.id === payload.teamId);
+    if (!team) throw new Error("Team not found.");
+
+    const activeMembers = db.memberships.filter(
+      (m) => m.team_id === payload.teamId && m.status === "ACTIVE"
+    );
+    if (activeMembers.length >= team.capacity) {
+      throw new Error(`Team has reached maximum capacity (${team.capacity} members).`);
+    }
+
+    const updatedTeam = await this.adminAddMember(payload);
+    return { success: true, team: updatedTeam };
   }
 
   // -------------------------------------------------------------

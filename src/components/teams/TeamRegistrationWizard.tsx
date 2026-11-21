@@ -640,13 +640,13 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
               )}
             </CardContent>
 
-            <CardFooter className="flex justify-between items-center border-t border-slate-100 bg-slate-50/40 pt-4">
-              <Link href="/courses">
-                <Button variant="ghost" size="sm" type="button" className="text-xs text-slate-600">
+            <CardFooter className="flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-0 sm:justify-between items-stretch sm:items-center border-t border-slate-100 bg-slate-50/40 p-4">
+              <Link href="/courses" className="w-full sm:w-auto">
+                <Button variant="ghost" size="sm" type="button" className="w-full sm:w-auto text-xs text-slate-600 h-10 sm:h-8">
                   Cancel
                 </Button>
               </Link>
-              <Button type="submit" size="sm" className="gap-1.5 font-semibold text-xs">
+              <Button type="submit" size="sm" className="w-full sm:w-auto gap-1.5 font-semibold text-xs h-11 sm:h-8">
                 Next: Step 2 (Team Members)
                 <ArrowRight className="w-3.5 h-3.5" />
               </Button>
@@ -830,18 +830,18 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
               </div>
             </CardContent>
 
-            <CardFooter className="flex justify-between items-center border-t border-slate-100 bg-slate-50/40 pt-4">
+            <CardFooter className="flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-0 sm:justify-between items-stretch sm:items-center border-t border-slate-100 bg-slate-50/40 p-4">
               <Button
                 variant="outline"
                 size="sm"
                 type="button"
                 onClick={() => setStep(1)}
-                className="gap-1.5 text-xs"
+                className="w-full sm:w-auto gap-1.5 text-xs h-10 sm:h-8"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 Back to Step 1
               </Button>
-              <Button type="submit" size="sm" className="gap-1.5 font-semibold text-xs">
+              <Button type="submit" size="sm" className="w-full sm:w-auto gap-1.5 font-semibold text-xs h-11 sm:h-8">
                 Next: Step 3 (Presentation Slot)
                 <ArrowRight className="w-3.5 h-3.5" />
               </Button>
@@ -990,14 +990,14 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
             </div>
           </CardContent>
 
-          <CardFooter className="flex justify-between items-center border-t border-slate-100 bg-slate-50/40 pt-4">
+          <CardFooter className="flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-0 sm:justify-between items-stretch sm:items-center border-t border-slate-100 bg-slate-50/40 p-4">
             <Button
               variant="outline"
               size="sm"
               type="button"
               onClick={() => setStep(2)}
               disabled={submitting}
-              className="gap-1.5 text-xs"
+              className="w-full sm:w-auto gap-1.5 text-xs h-10 sm:h-8"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               Back to Step 2
@@ -1007,7 +1007,7 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
               onClick={handleSubmit}
               disabled={submitting}
               size="sm"
-              className="gap-2 font-semibold text-xs shadow-sm bg-diu-blue hover:bg-diu-navy"
+              className="w-full sm:w-auto gap-2 font-semibold text-xs shadow-sm bg-diu-blue hover:bg-diu-navy h-11 sm:h-8"
             >
               {submitting ? (
                 "Registering Team..."

@@ -421,16 +421,17 @@ export function RegistrationsClient({
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setShowModal(false)}
+                  className="w-full sm:w-auto h-11 sm:h-9 text-xs"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading} size="sm">
+                <Button type="submit" disabled={loading} size="sm" className="w-full sm:w-auto h-11 sm:h-9 text-xs">
                   {loading ? "Creating..." : "Save Offering"}
                 </Button>
               </div>
@@ -588,16 +589,17 @@ export function RegistrationsClient({
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setEditingOffering(null)}
+                  className="w-full sm:w-auto h-11 sm:h-9 text-xs"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={editLoading} size="sm" className="bg-diu-blue hover:bg-diu-navy">
+                <Button type="submit" disabled={editLoading} size="sm" className="w-full sm:w-auto h-11 sm:h-9 bg-diu-blue hover:bg-diu-navy text-xs">
                   {editLoading ? "Saving Changes..." : "Save Changes"}
                 </Button>
               </div>
@@ -608,7 +610,8 @@ export function RegistrationsClient({
 
       {/* OFFERINGS LIST */}
       <Card className="border border-slate-200 shadow-sm bg-white overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead className="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
               <tr>
@@ -710,6 +713,97 @@ export function RegistrationsClient({
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Responsive Cards View */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {offerings.map((off) => (
+            <div key={off.id} className="p-4 space-y-3 bg-white">
+              <div className="flex justify-between items-start gap-2">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-xs text-diu-navy font-mono px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
+                      {off.course?.code}
+                    </span>
+                    <span className="text-diu-blue font-bold text-xs">Sec {off.section}</span>
+                  </div>
+                  <span className="text-slate-800 text-xs font-semibold block mt-1">
+                    {off.course?.name}
+                  </span>
+                  <span className="text-[11px] text-slate-400 block">
+                    {off.semester?.name}
+                  </span>
+                </div>
+                <RegistrationStatusBadge status={off.registration_status} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">Team Bounds</span>
+                  <span className="font-medium text-slate-700">{off.min_team_capacity} – {off.max_team_capacity} members</span>
+                  <span className="text-[10px] text-diu-blue font-bold block">Max {off.max_teams_limit || 20} teams</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">Registered</span>
+                  <Link
+                    href={`/superadmin/teams?offeringId=${off.id}`}
+                    className="font-bold text-diu-blue hover:underline inline-flex items-center gap-1 mt-0.5"
+                  >
+                    {off.teams_count} teams ({off.students_count} std)
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap justify-between items-center text-[11px] text-slate-500 gap-1.5 pt-0.5">
+                <span>Deadline: {formatDate(off.registration_deadline)}</span>
+                <button
+                  type="button"
+                  onClick={() => handleTopicToggle(off.id, off.topic_enabled !== false)}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                    off.topic_enabled !== false
+                      ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                      : "bg-slate-100 text-slate-600 border-slate-300"
+                  }`}
+                >
+                  <span>Topic: {off.topic_enabled !== false ? "Enabled" : "Disabled"}</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openEditModal(off)}
+                  className="flex-1 h-9 text-xs font-semibold"
+                >
+                  Edit Offering
+                </Button>
+                <select
+                  aria-label={`Change status for ${off.course?.code || "course"} section ${off.section}`}
+                  value={off.registration_status}
+                  onChange={(e) => handleStatusChange(off.id, e.target.value as RegistrationStatus)}
+                  className="h-9 px-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-diu-blue"
+                >
+                  <option value="OPEN">OPEN</option>
+                  <option value="PAUSED">PAUSED</option>
+                  <option value="UPCOMING">UPCOMING</option>
+                  <option value="CLOSED">CLOSED</option>
+                </select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDeleteOffering(off.id, off.course?.code, off.section)}
+                  className="h-9 px-3 text-red-600 border-red-200 hover:bg-red-50 text-xs"
+                  title="Delete Section Offering"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
       </Card>
     </div>

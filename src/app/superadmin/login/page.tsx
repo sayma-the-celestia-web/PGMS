@@ -91,7 +91,7 @@ export default function SuperadminLoginPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     autoComplete="username"
-                    className="text-xs"
+                    className="h-11 sm:h-9 text-sm sm:text-xs"
                   />
                 </div>
 
@@ -107,7 +107,7 @@ export default function SuperadminLoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     autoComplete="current-password"
-                    className="text-xs"
+                    className="h-11 sm:h-9 text-sm sm:text-xs"
                   />
                 </div>
               </CardContent>
@@ -116,7 +116,7 @@ export default function SuperadminLoginPage() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full gap-2 font-semibold text-xs shadow-sm bg-diu-blue hover:bg-diu-navy"
+                  className="w-full h-11 sm:h-9 gap-2 font-semibold text-sm sm:text-xs shadow-sm bg-diu-blue hover:bg-diu-navy"
                 >
                   {loading ? (
                     "Authenticating..."

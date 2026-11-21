@@ -88,10 +88,10 @@ export function CourseDetailsClient({
               </p>
             </div>
 
-            <div className="flex flex-col items-end gap-2">
+            <div className="flex flex-col sm:items-end items-start gap-2">
               <RegistrationStatusBadge status={currentOffering.registration_status} />
               <div className="text-xs text-blue-200 flex items-center gap-1.5 mt-1">
-                <Clock className="w-3.5 h-3.5" />
+                <Clock className="w-3.5 h-3.5 shrink-0" />
                 <span>Deadline: {formatDate(currentOffering.registration_deadline)}</span>
               </div>
             </div>
@@ -112,7 +112,7 @@ export function CourseDetailsClient({
                       href={`/courses/${course?.slug}?section=${encodeURIComponent(off.section)}`}
                     >
                       <button
-                        className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${isCurrent
+                        className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all min-h-[36px] ${isCurrent
                             ? "bg-white text-diu-navy shadow-sm"
                             : "bg-white/10 hover:bg-white/20 text-white"
                           }`}
@@ -153,7 +153,7 @@ export function CourseDetailsClient({
               {currentOffering.students_count || 0}
             </span>
           </div>
-          <div className="p-2">
+          <div className="p-2 col-span-2 sm:col-span-1">
             <span className="text-xs text-diu-slate block mb-1">Team Capacity Bounds</span>
             <span className="text-sm font-bold text-slate-700">
               {currentOffering.min_team_capacity} – {currentOffering.max_team_capacity} members
@@ -162,15 +162,15 @@ export function CourseDetailsClient({
         </div>
 
         {/* Primary Action Buttons */}
-        <div className="p-6 bg-white border-t border-slate-200 flex flex-wrap gap-4 items-center justify-between">
+        <div className="p-4 sm:p-6 bg-white border-t border-slate-200 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-slate-600">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>
               Student privacy protected: Student IDs are confidential and never exposed publicly.
             </span>
           </div>
 
-          <div className="flex flex-wrap gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             {isOfferingOpen ? (
               <>
                 <Link
@@ -179,7 +179,7 @@ export function CourseDetailsClient({
                   )}`}
                   className="w-full sm:w-auto"
                 >
-                  <Button size="lg" className="w-full sm:w-auto gap-2 font-semibold">
+                  <Button size="lg" className="w-full sm:w-auto min-h-[44px] gap-2 font-semibold">
                     <PlusCircle className="w-5 h-5" />
                     Create a Team
                   </Button>
@@ -189,7 +189,7 @@ export function CourseDetailsClient({
                   <Button
                     variant="outline"
                     size="lg"
-                    className="w-full sm:w-auto gap-2 font-medium"
+                    className="w-full sm:w-auto min-h-[44px] gap-2 font-medium"
                   >
                     <UserPlus className="w-4 h-4 text-diu-blue" />
                     Join an Existing Team
@@ -197,8 +197,8 @@ export function CourseDetailsClient({
                 </a>
               </>
             ) : (
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-md text-sm font-medium border border-slate-200">
-                <AlertCircle className="w-4 h-4 text-amber-600" />
+              <div className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-md text-xs sm:text-sm font-medium border border-slate-200">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
                 <span>
                   Registration is currently {currentOffering.registration_status.toLowerCase()}. New
                   team formation is locked.
@@ -411,7 +411,7 @@ export function CourseDetailsClient({
                       <Link href={`/teams/${team.id}/join`} className="w-full block">
                         <Button
                           variant="success"
-                          className="w-full text-xs font-semibold gap-1.5"
+                          className="w-full min-h-[44px] text-xs font-semibold gap-1.5"
                         >
                           <UserPlus className="w-4 h-4" />
                           Request to Join Team ({availableSlots} slot{availableSlots > 1 ? "s" : ""} left)
@@ -421,7 +421,7 @@ export function CourseDetailsClient({
                       <Button
                         disabled
                         variant="secondary"
-                        className="w-full text-xs text-slate-500 cursor-not-allowed"
+                        className="w-full min-h-[44px] text-xs text-slate-500 cursor-not-allowed"
                       >
                         Team is Full
                       </Button>
@@ -429,7 +429,7 @@ export function CourseDetailsClient({
                       <Button
                         disabled
                         variant="secondary"
-                        className="w-full text-xs text-slate-500 cursor-not-allowed"
+                        className="w-full min-h-[44px] text-xs text-slate-500 cursor-not-allowed"
                       >
                         {team.status === "CLOSED" ? "Team Closed" : "Registration Not Open"}
                       </Button>

@@ -56,11 +56,11 @@ export default async function HomePage() {
             </p>
 
             {/* CTA Buttons */}
-            <div className="pt-2 flex flex-wrap gap-4 items-center">
-              <Link href="/register-team">
+            <div className="pt-2 flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
+              <Link href="/register-team" className="w-full sm:w-auto">
                 <Button
                   size="lg"
-                  className="bg-white text-diu-navy hover:bg-blue-50 font-semibold shadow-lg shadow-black/15 gap-2 h-12 px-6"
+                  className="w-full sm:w-auto bg-white text-diu-navy hover:bg-blue-50 font-semibold shadow-lg shadow-black/15 gap-2 h-12 px-6 justify-center"
                 >
                   <UserPlus className="w-5 h-5 text-diu-blue" />
                   Register Team
@@ -68,22 +68,22 @@ export default async function HomePage() {
                 </Button>
               </Link>
 
-              <Link href="/courses">
+              <Link href="/courses" className="w-full sm:w-auto">
                 <Button
                   variant="outline"
                   size="lg"
-                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 h-12 px-6 font-medium backdrop-blur-sm gap-2"
+                  className="w-full sm:w-auto border-white/30 bg-white/10 text-white hover:bg-white/20 h-12 px-6 font-medium backdrop-blur-sm gap-2 justify-center"
                 >
                   <Users className="w-4 h-4" />
                   Find Team
                 </Button>
               </Link>
 
-              <Link href="/manage">
+              <Link href="/manage" className="w-full sm:w-auto">
                 <Button
                   variant="ghost"
                   size="lg"
-                  className="text-white/90 hover:text-white hover:bg-white/10 h-12 px-4 gap-2 text-sm"
+                  className="w-full sm:w-auto text-white/90 hover:text-white hover:bg-white/10 h-12 px-4 gap-2 text-sm justify-center"
                 >
                   <KeyRound className="w-4 h-4 text-emerald-300" />
                   Team Login

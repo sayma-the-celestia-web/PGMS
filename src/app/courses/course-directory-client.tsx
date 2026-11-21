@@ -161,11 +161,11 @@ export function CourseDirectoryClient({
     <div className="space-y-6">
       {/* Top Tab Navigator: Courses vs All Teams vs Find & Join Open Teams */}
       <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between border-b border-slate-200 pb-3">
-        <div className="flex bg-slate-100 p-1 rounded-xl text-xs sm:text-sm font-semibold w-full lg:max-w-2xl overflow-x-auto">
+        <div className="flex bg-slate-100 p-1 rounded-xl text-xs sm:text-sm font-semibold w-full lg:max-w-2xl overflow-x-auto scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveTab("courses")}
-            className={`flex-1 py-2 sm:py-2.5 px-3 rounded-lg text-center transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
+            className={`shrink-0 sm:flex-1 py-2 sm:py-2.5 px-3 rounded-lg text-center transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
               activeTab === "courses"
                 ? "bg-white text-diu-navy shadow-sm font-bold"
                 : "text-slate-600 hover:text-diu-blue"
@@ -181,7 +181,7 @@ export function CourseDirectoryClient({
           <button
             type="button"
             onClick={() => setActiveTab("allTeams")}
-            className={`flex-1 py-2 sm:py-2.5 px-3 rounded-lg text-center transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
+            className={`shrink-0 sm:flex-1 py-2 sm:py-2.5 px-3 rounded-lg text-center transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
               activeTab === "allTeams"
                 ? "bg-white text-diu-navy shadow-sm font-bold"
                 : "text-slate-600 hover:text-diu-blue"
@@ -197,7 +197,7 @@ export function CourseDirectoryClient({
           <button
             type="button"
             onClick={() => setActiveTab("openTeams")}
-            className={`flex-1 py-2 sm:py-2.5 px-3 rounded-lg text-center transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
+            className={`shrink-0 sm:flex-1 py-2 sm:py-2.5 px-3 rounded-lg text-center transition-all flex items-center justify-center gap-1.5 whitespace-nowrap ${
               activeTab === "openTeams"
                 ? "bg-white text-diu-navy shadow-sm font-bold"
                 : "text-slate-600 hover:text-diu-blue"
@@ -212,7 +212,7 @@ export function CourseDirectoryClient({
         </div>
 
         <Link href="/register-team" className="shrink-0">
-          <Button size="sm" className="w-full lg:w-auto text-xs font-semibold gap-1.5 bg-diu-blue hover:bg-diu-navy">
+          <Button size="sm" className="w-full lg:w-auto h-11 sm:h-9 text-xs font-semibold gap-1.5 bg-diu-blue hover:bg-diu-navy">
             <UserPlus className="w-4 h-4" />
             Register New Team
           </Button>

@@ -84,23 +84,23 @@ export default async function TeamPage({ params }: Props) {
 
           <CardContent className="p-6 space-y-6">
             {/* Stats row */}
-            <div className="grid grid-cols-3 gap-4 text-center p-4 bg-slate-50 rounded-xl border border-slate-100">
-              <div>
-                <span className="text-xs text-slate-500 block">Total Capacity</span>
-                <span className="text-xl font-bold text-diu-navy font-heading">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-100">
+              <div className="p-1">
+                <span className="text-[11px] sm:text-xs text-slate-500 block">Total Capacity</span>
+                <span className="text-lg sm:text-xl font-bold text-diu-navy font-heading">
                   {team.capacity}
                 </span>
               </div>
-              <div>
-                <span className="text-xs text-slate-500 block">Active Members</span>
-                <span className="text-xl font-bold text-diu-blue font-heading">
+              <div className="p-1">
+                <span className="text-[11px] sm:text-xs text-slate-500 block">Active Members</span>
+                <span className="text-lg sm:text-xl font-bold text-diu-blue font-heading">
                   {activeMembers.length}
                 </span>
               </div>
-              <div>
-                <span className="text-xs text-slate-500 block">Available Slots</span>
+              <div className="p-1">
+                <span className="text-[11px] sm:text-xs text-slate-500 block">Available Slots</span>
                 <span
-                  className={`text-xl font-bold font-heading ${
+                  className={`text-lg sm:text-xl font-bold font-heading ${
                     availableSlots > 0 ? "text-emerald-600" : "text-amber-600"
                   }`}
                 >
@@ -149,10 +149,10 @@ export default async function TeamPage({ params }: Props) {
             </div>
 
             {/* Action button */}
-            <div className="pt-4 border-t border-slate-100 flex flex-wrap gap-3">
+            <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-3">
               {isJoinable ? (
                 <Link href={`/teams/${team.id}/join`} className="w-full sm:w-auto">
-                  <Button variant="success" size="lg" className="w-full gap-2 font-semibold">
+                  <Button variant="success" size="lg" className="w-full sm:w-auto min-h-[44px] gap-2 font-semibold">
                     <UserPlus className="w-5 h-5" />
                     Join This Team ({availableSlots} slot{availableSlots > 1 ? "s" : ""} left)
                   </Button>
@@ -168,7 +168,7 @@ export default async function TeamPage({ params }: Props) {
               )}
 
               <Link href="/manage" className="w-full sm:w-auto">
-                <Button variant="outline" size="lg" className="w-full">
+                <Button variant="outline" size="lg" className="w-full sm:w-auto min-h-[44px]">
                   Manage With Reference Token
                 </Button>
               </Link>

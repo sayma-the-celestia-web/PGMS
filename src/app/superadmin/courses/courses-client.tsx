@@ -250,16 +250,17 @@ export function CoursesClient({ initialCourses }: Props) {
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setShowModal(false)}
+                  className="w-full sm:w-auto h-11 sm:h-9 text-xs"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading} size="sm" className="bg-diu-blue hover:bg-diu-navy text-white">
+                <Button type="submit" disabled={loading} size="sm" className="w-full sm:w-auto h-11 sm:h-9 bg-diu-blue hover:bg-diu-navy text-white text-xs">
                   {loading ? "Creating..." : "Create Course"}
                 </Button>
               </div>
@@ -327,16 +328,17 @@ export function CoursesClient({ initialCourses }: Props) {
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setEditingCourse(null)}
+                  className="w-full sm:w-auto h-11 sm:h-9 text-xs"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading} size="sm" className="bg-diu-blue hover:bg-diu-navy text-white">
+                <Button type="submit" disabled={loading} size="sm" className="w-full sm:w-auto h-11 sm:h-9 bg-diu-blue hover:bg-diu-navy text-white text-xs">
                   {loading ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
@@ -347,7 +349,8 @@ export function CoursesClient({ initialCourses }: Props) {
 
       {/* COURSES TABLE */}
       <Card className="border border-slate-200 shadow-sm bg-white overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead className="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
               <tr>
@@ -395,6 +398,56 @@ export function CoursesClient({ initialCourses }: Props) {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Responsive Cards View */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {courses.length === 0 ? (
+            <div className="p-8 text-center text-slate-400 text-xs">No courses registered yet.</div>
+          ) : (
+            courses.map((course) => (
+              <div key={course.id} className="p-4 space-y-3 bg-white">
+                <div className="flex justify-between items-start gap-2">
+                  <div>
+                    <span className="font-bold text-xs font-mono text-diu-navy px-2 py-0.5 rounded bg-blue-50 border border-blue-200">
+                      {course.code}
+                    </span>
+                    <h3 className="text-sm font-bold text-slate-800 mt-1.5">{course.name}</h3>
+                    <span className="text-[11px] font-mono text-slate-400 block mt-0.5">
+                      Slug: {course.slug}
+                    </span>
+                  </div>
+                </div>
+
+                {course.description && (
+                  <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                    {course.description}
+                  </p>
+                )}
+
+                <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEditModal(course)}
+                    className="flex-1 h-9 text-xs font-semibold gap-1.5"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    Edit Course
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeleteCourse(course.id, course.code)}
+                    className="h-9 px-3 text-red-600 border-red-200 hover:bg-red-50 text-xs gap-1.5"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </Card>
     </div>

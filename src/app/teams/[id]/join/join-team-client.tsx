@@ -218,7 +218,7 @@ export function JoinTeamClient({ team }: Props) {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
-                  className="text-xs"
+                  className="h-11 sm:h-9 text-sm sm:text-xs"
                 />
               </div>
 
@@ -236,7 +236,7 @@ export function JoinTeamClient({ team }: Props) {
                     if (studentId) setStudentId(formatStudentId(studentId));
                   }}
                   required
-                  className="text-xs font-mono"
+                  className="h-11 sm:h-9 text-sm sm:text-xs font-mono"
                 />
                 {studentId && !idRegex.test(formatStudentId(studentId)) && (
                   <p className="text-[11px] text-red-600 font-medium mt-1">
@@ -246,9 +246,9 @@ export function JoinTeamClient({ team }: Props) {
               </div>
             </CardContent>
 
-            <CardFooter className="flex justify-between items-center border-t border-slate-100 bg-slate-50/50 pt-4 pb-4">
-              <Link href={`/courses/${course?.slug}`}>
-                <Button variant="ghost" size="sm" type="button" className="text-xs">
+            <CardFooter className="flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-0 sm:justify-between items-stretch sm:items-center border-t border-slate-100 bg-slate-50/50 pt-4 pb-4">
+              <Link href={`/courses/${course?.slug}`} className="w-full sm:w-auto">
+                <Button variant="ghost" size="sm" type="button" className="w-full sm:w-auto h-11 sm:h-8 text-xs">
                   Cancel
                 </Button>
               </Link>
@@ -256,7 +256,7 @@ export function JoinTeamClient({ team }: Props) {
                 type="submit"
                 disabled={loading}
                 size="sm"
-                className="gap-2 font-semibold text-xs shadow-sm bg-diu-blue hover:bg-diu-navy"
+                className="w-full sm:w-auto h-11 sm:h-8 gap-2 font-semibold text-xs shadow-sm bg-diu-blue hover:bg-diu-navy"
               >
                 {loading ? "Submitting Request..." : "Submit Join Request"}
                 <ArrowRight className="w-3.5 h-3.5" />

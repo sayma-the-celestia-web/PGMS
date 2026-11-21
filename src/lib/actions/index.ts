@@ -2,6 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+
+function safeRevalidatePath(originalPath: string, type?: "layout" | "page") {
+  try {
+    revalidatePath(originalPath, type);
+  } catch {
+    // Invariant: static generation store missing when invoked outside request or in background
+  }
+}
 import { DataService } from "../services/data-service";
 import { importTeamsFromExcelBuffer } from "../services/excel-service";
 import { MultiStepRegisterTeamPayload, LeaderLoginResult } from "@/types";
@@ -30,9 +38,9 @@ export async function createTeamAction(payload: {
   try {
     const validated = createTeamSchema.parse(payload);
     const result = await DataService.createTeamWithLeader(validated);
-    revalidatePath("/courses");
-    revalidatePath(`/courses/${result.offeringSlug || ""}`);
-    revalidatePath("/superadmin/teams");
+    safeRevalidatePath("/courses");
+    safeRevalidatePath(`/courses/${result.offeringSlug || ""}`);
+    safeRevalidatePath("/superadmin/teams");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to create team" };
@@ -47,9 +55,9 @@ export async function joinTeamAction(payload: {
   try {
     const validated = joinTeamSchema.parse(payload);
     const result = await DataService.joinTeam(validated);
-    revalidatePath("/courses");
-    revalidatePath(`/teams/${payload.teamId}`);
-    revalidatePath("/superadmin/teams");
+    safeRevalidatePath("/courses");
+    safeRevalidatePath(`/teams/${payload.teamId}`);
+    safeRevalidatePath("/superadmin/teams");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to join team" };
@@ -72,9 +80,9 @@ export async function updateTeamSettingsAction(
   try {
     const validated = updateTeamSettingsSchema.parse(updates);
     const updatedTeam = await DataService.updateTeamSettings(token, validated);
-    revalidatePath("/courses");
-    revalidatePath(`/teams/${updatedTeam.id}`);
-    revalidatePath("/manage");
+    safeRevalidatePath("/courses");
+    safeRevalidatePath(`/teams/${updatedTeam.id}`);
+    safeRevalidatePath("/manage");
     return { success: true, team: updatedTeam };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to update team settings" };
@@ -93,8 +101,8 @@ export async function transferLeadershipAction(
       token,
       validated.newLeaderMembershipId
     );
-    revalidatePath("/courses");
-    revalidatePath("/manage");
+    safeRevalidatePath("/courses");
+    safeRevalidatePath("/manage");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to transfer leadership" };
@@ -104,8 +112,8 @@ export async function transferLeadershipAction(
 export async function memberLeaveTeamAction(token: string) {
   try {
     const result = await DataService.memberLeaveTeam(token);
-    revalidatePath("/courses");
-    revalidatePath("/manage");
+    safeRevalidatePath("/courses");
+    safeRevalidatePath("/manage");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to leave team" };
@@ -119,8 +127,8 @@ export async function updateMemberProfileAction(
   try {
     const validated = updateMemberProfileSchema.parse(updates);
     const result = await DataService.updateMemberProfile(token, validated);
-    revalidatePath("/courses");
-    revalidatePath("/manage");
+    safeRevalidatePath("/courses");
+    safeRevalidatePath("/manage");
     return { success: true, student: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to update details" };
@@ -163,8 +171,8 @@ export async function createSemesterAction(data: any) {
   try {
     const validated = semesterFormSchema.parse(data);
     const result = await DataService.createSemester(validated);
-    revalidatePath("/superadmin/semesters");
-    revalidatePath("/courses");
+    safeRevalidatePath("/superadmin/semesters");
+    safeRevalidatePath("/courses");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to create semester" };
@@ -175,8 +183,8 @@ export async function updateSemesterAction(id: string, data: any) {
   try {
     const validated = semesterFormSchema.partial().parse(data);
     const result = await DataService.updateSemester(id, validated);
-    revalidatePath("/superadmin/semesters");
-    revalidatePath("/courses");
+    safeRevalidatePath("/superadmin/semesters");
+    safeRevalidatePath("/courses");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to update semester" };
@@ -192,8 +200,8 @@ export async function createCourseAction(data: any) {
       description: validated.description || null,
       slug: validated.slug,
     });
-    revalidatePath("/superadmin/courses");
-    revalidatePath("/courses");
+    safeRevalidatePath("/superadmin/courses");
+    safeRevalidatePath("/courses");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to create course" };
@@ -204,8 +212,8 @@ export async function updateCourseAction(id: string, data: any) {
   try {
     const validated = courseFormSchema.partial().parse(data);
     const result = await DataService.updateCourse(id, validated);
-    revalidatePath("/superadmin/courses");
-    revalidatePath("/courses");
+    safeRevalidatePath("/superadmin/courses");
+    safeRevalidatePath("/courses");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to update course" };
@@ -216,9 +224,9 @@ export async function createCourseOfferingAction(data: any) {
   try {
     const validated = courseOfferingFormSchema.parse(data);
     const result = await DataService.createCourseOffering(validated);
-    revalidatePath("/superadmin/registrations");
-    revalidatePath("/courses");
-    revalidatePath("/register-team");
+    safeRevalidatePath("/superadmin/registrations");
+    safeRevalidatePath("/courses");
+    safeRevalidatePath("/register-team");
     return { success: true, data: result };
   } catch (error: any) {
     if (error?.errors && Array.isArray(error.errors)) {
@@ -243,10 +251,10 @@ export async function updateCourseOfferingAction(id: string, data: any) {
       };
     }
     const result = await DataService.updateCourseOffering(id, validated);
-    revalidatePath("/superadmin/registrations");
-    revalidatePath("/superadmin/teams");
-    revalidatePath("/courses");
-    revalidatePath("/register-team");
+    safeRevalidatePath("/superadmin/registrations");
+    safeRevalidatePath("/superadmin/teams");
+    safeRevalidatePath("/courses");
+    safeRevalidatePath("/register-team");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to update offering" };
@@ -267,8 +275,8 @@ export async function adminUpdateTeamAction(
 ) {
   try {
     const result = await DataService.adminUpdateTeam(teamId, updates);
-    revalidatePath("/superadmin/teams");
-    revalidatePath("/courses");
+    safeRevalidatePath("/superadmin/teams");
+    safeRevalidatePath("/courses");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to update team" };
@@ -282,8 +290,8 @@ export async function adminAddMemberAction(payload: {
 }) {
   try {
     const result = await DataService.adminAddMember(payload);
-    revalidatePath("/superadmin/teams");
-    revalidatePath("/courses");
+    safeRevalidatePath("/superadmin/teams");
+    safeRevalidatePath("/courses");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to add member" };
@@ -293,9 +301,9 @@ export async function adminAddMemberAction(payload: {
 export async function deleteCourseOfferingAction(offeringId: string) {
   try {
     await DataService.deleteCourseOffering(offeringId);
-    revalidatePath("/superadmin/registrations");
-    revalidatePath("/superadmin/teams");
-    revalidatePath("/courses");
+    safeRevalidatePath("/superadmin/registrations");
+    safeRevalidatePath("/superadmin/teams");
+    safeRevalidatePath("/courses");
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to delete section offering" };
@@ -308,8 +316,8 @@ export async function adminRemoveMemberAction(
 ) {
   try {
     const result = await DataService.adminRemoveMember(membershipId, reason);
-    revalidatePath("/superadmin/teams");
-    revalidatePath("/courses");
+    safeRevalidatePath("/superadmin/teams");
+    safeRevalidatePath("/courses");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to remove member" };
@@ -319,9 +327,9 @@ export async function adminRemoveMemberAction(
 export async function adminDeleteTeamAction(teamId: string) {
   try {
     const result = await DataService.deleteTeam(teamId);
-    revalidatePath("/superadmin/teams");
-    revalidatePath("/superadmin");
-    revalidatePath("/courses");
+    safeRevalidatePath("/superadmin/teams");
+    safeRevalidatePath("/superadmin");
+    safeRevalidatePath("/courses");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to delete team" };
@@ -334,7 +342,7 @@ export async function adminUpdateStudentAction(
 ) {
   try {
     const result = await DataService.adminUpdateStudent(studentId, updates);
-    revalidatePath("/superadmin/students");
+    safeRevalidatePath("/superadmin/students");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to update student" };
@@ -358,10 +366,10 @@ export async function registerTeamMultiStepAction(payload: MultiStepRegisterTeam
   try {
     const validated = multiStepRegisterTeamSchema.parse(payload);
     const result = await DataService.registerTeamMultiStep(validated);
-    revalidatePath("/courses");
-    revalidatePath(`/courses/${result.offeringSlug || ""}`);
-    revalidatePath("/superadmin/teams");
-    revalidatePath("/manage");
+    safeRevalidatePath("/courses");
+    safeRevalidatePath(`/courses/${result.offeringSlug || ""}`);
+    safeRevalidatePath("/superadmin/teams");
+    safeRevalidatePath("/manage");
     return { success: true, data: result };
   } catch (error: any) {
     if (error?.errors && Array.isArray(error.errors)) {
@@ -402,8 +410,8 @@ export async function updateTeamSlideAction(
       slide_file_name: validated.slideFileName,
       slide_file_url: validated.slideFileUrl,
     });
-    revalidatePath(`/teams/${teamId}`);
-    revalidatePath("/manage");
+    safeRevalidatePath(`/teams/${teamId}`);
+    safeRevalidatePath("/manage");
     return { success: true, team: updated };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to update slides" };
@@ -413,9 +421,9 @@ export async function updateTeamSlideAction(
 export async function updateTeamNameAction(teamId: string, teamName: string) {
   try {
     const updated = await DataService.updateTeamName(teamId, teamName);
-    revalidatePath("/courses");
-    revalidatePath(`/teams/${teamId}`);
-    revalidatePath("/manage");
+    safeRevalidatePath("/courses");
+    safeRevalidatePath(`/teams/${teamId}`);
+    safeRevalidatePath("/manage");
     return { success: true, team: updated };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to update team name" };
@@ -425,9 +433,9 @@ export async function updateTeamNameAction(teamId: string, teamName: string) {
 export async function toggleTeamStatusAction(teamId: string, status: "OPEN" | "CLOSED") {
   try {
     const updated = await DataService.toggleTeamStatus(teamId, status);
-    revalidatePath("/courses");
-    revalidatePath(`/teams/${teamId}`);
-    revalidatePath("/manage");
+    safeRevalidatePath("/courses");
+    safeRevalidatePath(`/teams/${teamId}`);
+    safeRevalidatePath("/manage");
     return { success: true, team: updated };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to toggle team status" };
@@ -450,8 +458,8 @@ export async function requestJoinTeamAction(payload: {
       studentName: validated.fullName,
       studentId: validated.studentId,
     });
-    revalidatePath("/courses");
-    revalidatePath(`/teams/${payload.teamId}`);
+    safeRevalidatePath("/courses");
+    safeRevalidatePath(`/teams/${payload.teamId}`);
     return { success: true, data: result };
   } catch (error: any) {
     if (error?.errors && Array.isArray(error.errors)) {
@@ -468,19 +476,67 @@ export async function handleJoinRequestAction(
 ) {
   try {
     const result = await DataService.handleJoinRequest(requestId, action);
-    revalidatePath("/courses");
-    revalidatePath("/manage");
+    safeRevalidatePath("/courses");
+    safeRevalidatePath("/manage");
     return { success: true, message: result.message };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to process request" };
   }
 }
 
+export async function leaderUpdateMemberAction(payload: {
+  teamId: string;
+  membershipId: string;
+  fullName: string;
+  studentId: string;
+}) {
+  try {
+    const res = await DataService.leaderUpdateMember(payload);
+    safeRevalidatePath("/manage");
+    safeRevalidatePath("/courses");
+    safeRevalidatePath(`/teams/${payload.teamId}`);
+    safeRevalidatePath("/superadmin/teams");
+    return { success: true, team: res.team };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "Failed to update member" };
+  }
+}
+
+export async function leaderRemoveMemberAction(teamId: string, membershipId: string) {
+  try {
+    const res = await DataService.leaderRemoveMember(teamId, membershipId);
+    safeRevalidatePath("/manage");
+    safeRevalidatePath("/courses");
+    safeRevalidatePath(`/teams/${teamId}`);
+    safeRevalidatePath("/superadmin/teams");
+    return { success: true, team: res.team };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "Failed to remove member" };
+  }
+}
+
+export async function leaderAddMemberAction(payload: {
+  teamId: string;
+  studentName: string;
+  studentId: string;
+}) {
+  try {
+    const res = await DataService.leaderAddMember(payload);
+    safeRevalidatePath("/manage");
+    safeRevalidatePath("/courses");
+    safeRevalidatePath(`/teams/${payload.teamId}`);
+    safeRevalidatePath("/superadmin/teams");
+    return { success: true, team: res.team };
+  } catch (error: any) {
+    return { success: false, error: error?.message || "Failed to add member" };
+  }
+}
+
 export async function deleteCourseAction(courseId: string) {
   try {
     await DataService.deleteCourse(courseId);
-    revalidatePath("/superadmin/courses");
-    revalidatePath("/courses");
+    safeRevalidatePath("/superadmin/courses");
+    safeRevalidatePath("/courses");
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to delete course" };
@@ -497,8 +553,8 @@ export async function importTeamsExcelAction(formData: FormData) {
     const buffer = Buffer.from(arrayBuffer);
 
     const result = await importTeamsFromExcelBuffer(buffer, offeringId);
-    revalidatePath("/superadmin/teams");
-    revalidatePath("/courses");
+    safeRevalidatePath("/superadmin/teams");
+    safeRevalidatePath("/courses");
     return { success: true, ...result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to import Excel workbook" };

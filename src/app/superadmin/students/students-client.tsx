@@ -147,16 +147,17 @@ export function StudentsClient({ initialStudents }: Props) {
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setEditingStudent(null)}
+                  className="w-full sm:w-auto h-11 sm:h-9 text-xs"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading} size="sm">
+                <Button type="submit" disabled={loading} size="sm" className="w-full sm:w-auto h-11 sm:h-9 bg-diu-blue hover:bg-diu-navy text-white text-xs">
                   {loading ? "Saving..." : "Save Changes"}
                 </Button>
               </div>
@@ -167,7 +168,8 @@ export function StudentsClient({ initialStudents }: Props) {
 
       {/* TABLE */}
       <Card className="border border-slate-200 shadow-sm bg-white overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead className="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
               <tr>
@@ -215,6 +217,56 @@ export function StudentsClient({ initialStudents }: Props) {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Responsive Cards View */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {filtered.length === 0 ? (
+            <div className="p-8 text-center text-slate-400 text-xs">No students found.</div>
+          ) : (
+            filtered.map((s) => (
+              <div key={s.id} className="p-4 space-y-2.5 bg-white">
+                <div className="flex justify-between items-start gap-2">
+                  <div>
+                    <span className="font-bold font-mono text-xs text-diu-navy px-2 py-0.5 rounded bg-blue-50 border border-blue-200">
+                      {s.student_id}
+                    </span>
+                    <h3 className="text-sm font-bold text-slate-800 mt-1">{s.full_name}</h3>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEdit(s)}
+                    className="h-8 px-2.5 text-xs text-diu-blue"
+                  >
+                    <Edit2 className="w-3.5 h-3.5 mr-1" />
+                    Correct
+                  </Button>
+                </div>
+
+                <div className="text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-100 space-y-1">
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">Team Memberships</span>
+                  {s.memberships.length === 0 ? (
+                    <span className="text-slate-400 italic">No active teams</span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {s.memberships.map((m) => (
+                        <span
+                          key={m.id}
+                          className="bg-white text-slate-700 px-2 py-0.5 rounded text-[10px] font-medium border border-slate-200"
+                        >
+                          {m.team?.team_name} ({m.role})
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <span className="text-[10px] text-slate-400 block pt-1">
+                    Joined: {formatDate(s.created_at)}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </Card>
     </div>

@@ -761,20 +761,20 @@ export function TeamsManagementClient({
                     placeholder="Student Full Name"
                     value={newMemberName}
                     onChange={(e) => setNewMemberName(e.target.value)}
-                    className="text-xs bg-white"
+                    className="text-xs bg-white h-11 sm:h-9"
                   />
                   <Input
                     placeholder="Student ID (e.g. 252-35-102)"
                     value={newMemberId}
                     onChange={(e) => setNewMemberId(e.target.value)}
-                    className="text-xs bg-white"
+                    className="text-xs bg-white h-11 sm:h-9"
                   />
                   <Button
                     type="button"
                     onClick={handleAddMemberToTeam}
                     disabled={addingMember || !newMemberName.trim() || !newMemberId.trim()}
                     size="sm"
-                    className="bg-diu-blue hover:bg-diu-navy text-white text-xs gap-1"
+                    className="w-full sm:w-auto h-11 sm:h-9 bg-diu-blue hover:bg-diu-navy text-white text-xs gap-1"
                   >
                     <UserPlus className="w-3 h-3" />
                     {addingMember ? "Adding..." : "Add Member"}
@@ -782,16 +782,17 @@ export function TeamsManagementClient({
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => setEditingTeam(null)}
+                  className="w-full sm:w-auto h-11 sm:h-9 text-xs"
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading} size="sm" className="bg-diu-blue hover:bg-diu-navy text-white font-semibold">
+                <Button type="submit" disabled={loading} size="sm" className="w-full sm:w-auto h-11 sm:h-9 bg-diu-blue hover:bg-diu-navy text-white font-semibold text-xs">
                   {loading ? "Saving Changes..." : "Save Changes"}
                 </Button>
               </div>
@@ -802,7 +803,8 @@ export function TeamsManagementClient({
 
       {/* TEAMS DATA TABLE */}
       <Card className="border border-slate-200 shadow-sm bg-white overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead className="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider border-b border-slate-200">
               <tr>
@@ -1019,6 +1021,166 @@ export function TeamsManagementClient({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Responsive Teams Cards View */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {filteredTeams.length === 0 ? (
+            <div className="p-8 text-center text-slate-400 text-xs">
+              No presentation teams found matching your filters.
+            </div>
+          ) : (
+            filteredTeams.map((team) => {
+              const isExpanded = expandedTeamId === team.id;
+              const members = team.memberships || [];
+              const activeCount = team.registered_count || members.length;
+              const availableSlots = team.available_slots !== undefined
+                ? team.available_slots
+                : Math.max(0, team.capacity - activeCount);
+
+              return (
+                <div key={team.id} className="p-4 space-y-3 bg-white">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-diu-blue/10 text-diu-blue font-bold text-xs border border-diu-blue/20 font-mono">
+                        #{team.presentation_number || "—"}
+                      </span>
+                      <div>
+                        <span className="font-bold text-sm text-diu-navy block">
+                          {team.team_name}
+                        </span>
+                        <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                          <span className="font-semibold text-diu-blue">
+                            {team.course_offering?.course?.code || "N/A"}
+                          </span>
+                          <span>•</span>
+                          <span>Sec {team.course_offering?.section || "N/A"}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <TeamStatusBadge status={team.status} />
+                  </div>
+
+                  <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-slate-500 flex items-center gap-1">
+                        <Crown className="w-3 h-3 text-amber-500" />
+                        Leader:
+                      </span>
+                      <span className="font-semibold text-slate-800">
+                        {team.leader?.student?.full_name || "Unassigned"}{" "}
+                        {team.leader?.student?.student_id && (
+                          <span className="font-mono text-[10px] text-slate-500 font-normal">
+                            ({team.leader.student.student_id})
+                          </span>
+                        )}
+                      </span>
+                    </div>
+
+                    {team.topic && (
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
+                        <span className="text-[11px] text-slate-500">Topic:</span>
+                        <span className="font-medium text-slate-700 italic truncate max-w-[180px]">
+                          {team.topic}
+                        </span>
+                      </div>
+                    )}
+
+                    {team.slide_link && (
+                      <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
+                        <span className="text-[11px] text-slate-500">Slides:</span>
+                        <a
+                          href={team.slide_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[11px] text-diu-blue hover:underline inline-flex items-center gap-1 font-semibold"
+                        >
+                          <Presentation className="w-3 h-3 text-emerald-600" />
+                          View Presentation
+                        </a>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Members count & toggle */}
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedTeamId(isExpanded ? null : team.id)}
+                      className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-100/80 hover:bg-slate-100 text-xs text-slate-700 transition-colors"
+                    >
+                      <span className="flex items-center gap-1.5 font-medium">
+                        <Users className="w-3.5 h-3.5 text-diu-blue" />
+                        Roster: {activeCount} / {team.capacity} members ({availableSlots} vacant)
+                      </span>
+                      {isExpanded ? (
+                        <ChevronUp className="w-4 h-4 text-slate-500" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-slate-500" />
+                      )}
+                    </button>
+
+                    {isExpanded && (
+                      <div className="mt-2 space-y-1.5 pl-1">
+                        {members.map((m) => (
+                          <div
+                            key={m.id}
+                            className="p-2 rounded bg-slate-50 border border-slate-200 flex justify-between items-center text-xs"
+                          >
+                            <div>
+                              <div className="font-medium text-slate-800 flex items-center gap-1">
+                                {m.student?.full_name}
+                                {m.role === "LEADER" && (
+                                  <Crown className="w-3 h-3 text-amber-500" />
+                                )}
+                              </div>
+                              <span className="font-mono text-slate-500 text-[10px]">
+                                {m.student?.student_id}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveMember(m.id, m.student?.full_name || "Member")}
+                              className="p-1 rounded text-red-600 hover:bg-red-50"
+                              title="Remove member"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Mobile Actions toolbar */}
+                  <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditModal(team)}
+                      className="flex-1 h-9 text-xs font-semibold gap-1.5"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      Edit Team
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={deleteLoadingId === team.id}
+                      onClick={() => handleDeleteTeam(team.id, team.team_name)}
+                      className="h-9 px-3 text-red-600 border-red-200 hover:bg-red-50 text-xs gap-1.5"
+                      title="Delete Team"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </Card>
     </div>

@@ -45,56 +45,344 @@
       "full_name": "Tanvir Ahmed",
       "student_id": "252-35-101",
       "normalized_student_id": "252-35-101",
-      "created_at": "2026-11-21T12:45:22.555Z",
-      "updated_at": "2026-11-21T12:45:22.555Z"
+      "created_at": "2026-11-21T12:45:22.555+00:00",
+      "updated_at": "2026-11-21T12:45:22.555+00:00"
     },
     {
       "id": "stu-1795265122555-5hz28",
       "full_name": "Ayesha Rahman",
       "student_id": "252-35-102",
       "normalized_student_id": "252-35-102",
-      "created_at": "2026-11-21T12:45:22.555Z",
-      "updated_at": "2026-11-21T12:45:22.555Z"
+      "created_at": "2026-11-21T12:45:22.555+00:00",
+      "updated_at": "2026-11-21T12:45:22.555+00:00"
     },
     {
       "id": "stu-1795265122559-aw0oz",
       "full_name": "Mahmud Hasan",
       "student_id": "252-35-104",
       "normalized_student_id": "252-35-104",
-      "created_at": "2026-11-21T12:45:22.559Z",
-      "updated_at": "2026-11-21T12:45:22.559Z"
+      "created_at": "2026-11-21T12:45:22.559+00:00",
+      "updated_at": "2026-11-21T12:45:22.559+00:00"
     },
     {
       "id": "stu-1795275238896-bxswo",
       "full_name": "Golam Morshed Eashan",
       "student_id": "252-35-242",
       "normalized_student_id": "252-35-242",
-      "created_at": "2026-11-21T15:33:58.896Z",
-      "updated_at": "2026-11-21T15:33:58.897Z"
+      "created_at": "2026-11-21T15:33:58.896+00:00",
+      "updated_at": "2026-11-21T15:33:58.897+00:00"
     },
     {
       "id": "stu-1795275238897-qgcto",
       "full_name": "Tasmina Akter Tisha",
       "student_id": "252-35-384",
       "normalized_student_id": "252-35-384",
-      "created_at": "2026-11-21T15:33:58.897Z",
-      "updated_at": "2026-11-21T15:33:58.897Z"
+      "created_at": "2026-11-21T15:33:58.897+00:00",
+      "updated_at": "2026-11-21T15:33:58.897+00:00"
     },
     {
       "id": "stu-1795275238897-nukmu",
       "full_name": "Lamia Jahan Jui",
       "student_id": "252-35-409",
       "normalized_student_id": "252-35-409",
-      "created_at": "2026-11-21T15:33:58.897Z",
-      "updated_at": "2026-11-21T15:33:58.897Z"
+      "created_at": "2026-11-21T15:33:58.897+00:00",
+      "updated_at": "2026-11-21T15:33:58.897+00:00"
     },
     {
       "id": "stu-1795275238897-ozen4",
       "full_name": "Toriqul Islam",
       "student_id": "252-35-582",
       "normalized_student_id": "252-35-582",
-      "created_at": "2026-11-21T15:33:58.897Z",
-      "updated_at": "2026-11-21T15:33:58.897Z"
+      "created_at": "2026-11-21T15:33:58.897+00:00",
+      "updated_at": "2026-11-21T20:09:15.735+00:00"
+    },
+    {
+      "id": "stu-1795277210467-e2w77",
+      "full_name": "Sayma Ferdousi Fariha",
+      "student_id": "252-35-103",
+      "normalized_student_id": "252-35-103",
+      "created_at": "2026-11-21T16:06:50.467+00:00",
+      "updated_at": "2026-11-21T16:06:50.467+00:00"
+    },
+    {
+      "id": "stu-1795278047000-jsl88",
+      "full_name": "Mst.Maria Akter Banna",
+      "student_id": "252-35-588",
+      "normalized_student_id": "252-35-588",
+      "created_at": "2026-11-21T16:20:47+00:00",
+      "updated_at": "2026-11-21T16:20:47+00:00"
+    },
+    {
+      "id": "stu-1795278047000-gai42",
+      "full_name": "Jasia Zaman Saba",
+      "student_id": "252-35-565",
+      "normalized_student_id": "252-35-565",
+      "created_at": "2026-11-21T16:20:47+00:00",
+      "updated_at": "2026-11-21T16:20:47+00:00"
+    },
+    {
+      "id": "stu-1795278047000-6hx28",
+      "full_name": "Mst.Mahfuja Akter Jarin",
+      "student_id": "252-35-594",
+      "normalized_student_id": "252-35-594",
+      "created_at": "2026-11-21T16:20:47+00:00",
+      "updated_at": "2026-11-21T16:20:47.001+00:00"
+    },
+    {
+      "id": "stu-1795278047001-fh770",
+      "full_name": "Aboni Biswas",
+      "student_id": "252-35-543",
+      "normalized_student_id": "252-35-543",
+      "created_at": "2026-11-21T16:20:47.001+00:00",
+      "updated_at": "2026-11-21T16:20:47.001+00:00"
+    },
+    {
+      "id": "stu-1795278047001-il9su",
+      "full_name": "Puza Biswas",
+      "student_id": "252-35-608",
+      "normalized_student_id": "252-35-608",
+      "created_at": "2026-11-21T16:20:47.001+00:00",
+      "updated_at": "2026-11-21T16:20:47.001+00:00"
+    },
+    {
+      "id": "stu-1795278406166-elu9x",
+      "full_name": "SK Jayed Yeamin",
+      "student_id": "252-35-596",
+      "normalized_student_id": "252-35-596",
+      "created_at": "2026-11-21T16:26:46.166+00:00",
+      "updated_at": "2026-11-21T16:26:46.166+00:00"
+    },
+    {
+      "id": "stu-1795278406166-vwfel",
+      "full_name": "Razwan Mahmud",
+      "student_id": "252-35-598",
+      "normalized_student_id": "252-35-598",
+      "created_at": "2026-11-21T16:26:46.166+00:00",
+      "updated_at": "2026-11-21T16:26:46.166+00:00"
+    },
+    {
+      "id": "stu-1795278406166-51u9x",
+      "full_name": "Mahtabul Al Nahian",
+      "student_id": "252-35-408",
+      "normalized_student_id": "252-35-408",
+      "created_at": "2026-11-21T16:26:46.166+00:00",
+      "updated_at": "2026-11-21T16:26:46.166+00:00"
+    },
+    {
+      "id": "stu-1795278406166-gi7ns",
+      "full_name": "Tohidul Islam Soyeb",
+      "student_id": "252-35-592",
+      "normalized_student_id": "252-35-592",
+      "created_at": "2026-11-21T16:26:46.166+00:00",
+      "updated_at": "2026-11-21T16:26:46.166+00:00"
+    },
+    {
+      "id": "stu-1795278406166-947pj",
+      "full_name": "Faiaz Ul Islam",
+      "student_id": "252-35-597",
+      "normalized_student_id": "252-35-597",
+      "created_at": "2026-11-21T16:26:46.166+00:00",
+      "updated_at": "2026-11-21T16:26:46.166+00:00"
+    },
+    {
+      "id": "stu-1795278899714-858qw",
+      "full_name": "Pritom Kundu",
+      "student_id": "252-35-020",
+      "normalized_student_id": "252-35-020",
+      "created_at": "2026-11-21T16:34:59.714+00:00",
+      "updated_at": "2026-11-21T16:34:59.714+00:00"
+    },
+    {
+      "id": "stu-1795278899714-8h2fj",
+      "full_name": "Nabil Bin Alomgir",
+      "student_id": "252-35-541",
+      "normalized_student_id": "252-35-541",
+      "created_at": "2026-11-21T16:34:59.714+00:00",
+      "updated_at": "2026-11-21T16:34:59.714+00:00"
+    },
+    {
+      "id": "stu-1795278899714-n7pg3",
+      "full_name": "Tanjilur Rahman Maruf",
+      "student_id": "252-35-523",
+      "normalized_student_id": "252-35-523",
+      "created_at": "2026-11-21T16:34:59.714+00:00",
+      "updated_at": "2026-11-21T16:34:59.714+00:00"
+    },
+    {
+      "id": "stu-1795278899714-6g5xp",
+      "full_name": "Israt Zaman Achol",
+      "student_id": "252-35-380",
+      "normalized_student_id": "252-35-380",
+      "created_at": "2026-11-21T16:34:59.714+00:00",
+      "updated_at": "2026-11-21T16:34:59.714+00:00"
+    },
+    {
+      "id": "stu-1795278899714-ha8jz",
+      "full_name": "Alimujjman Shaikat",
+      "student_id": "252-35-416",
+      "normalized_student_id": "252-35-416",
+      "created_at": "2026-11-21T16:34:59.714+00:00",
+      "updated_at": "2026-11-21T16:34:59.714+00:00"
+    },
+    {
+      "id": "stu-1795279130399-dli6d",
+      "full_name": "Sazid Ahmed",
+      "student_id": "252-35-439",
+      "normalized_student_id": "252-35-439",
+      "created_at": "2026-11-21T16:38:50.399+00:00",
+      "updated_at": "2026-11-21T16:38:50.399+00:00"
+    },
+    {
+      "id": "stu-1795279130400-skaeo",
+      "full_name": "Atanu Mitra",
+      "student_id": "252-35-300",
+      "normalized_student_id": "252-35-300",
+      "created_at": "2026-11-21T16:38:50.4+00:00",
+      "updated_at": "2026-11-21T16:38:50.4+00:00"
+    },
+    {
+      "id": "stu-1795279130400-u4eks",
+      "full_name": "Ali Nauaz Sharif",
+      "student_id": "252-35-407",
+      "normalized_student_id": "252-35-407",
+      "created_at": "2026-11-21T16:38:50.4+00:00",
+      "updated_at": "2026-11-21T16:38:50.4+00:00"
+    },
+    {
+      "id": "stu-1795279130400-si29v",
+      "full_name": "Tanmoy Biswas",
+      "student_id": "252-35-424",
+      "normalized_student_id": "252-35-424",
+      "created_at": "2026-11-21T16:38:50.4+00:00",
+      "updated_at": "2026-11-21T16:38:50.4+00:00"
+    },
+    {
+      "id": "stu-1795280835989-ap16w",
+      "full_name": "Arpo",
+      "student_id": "252-35-059",
+      "normalized_student_id": "252-35-059",
+      "created_at": "2026-11-21T17:07:15.989+00:00",
+      "updated_at": "2026-11-21T17:07:15.989+00:00"
+    },
+    {
+      "id": "stu-1795280835989-62apw",
+      "full_name": "Arpita",
+      "student_id": "252-35-006",
+      "normalized_student_id": "252-35-006",
+      "created_at": "2026-11-21T17:07:15.99+00:00",
+      "updated_at": "2026-11-21T17:07:15.99+00:00"
+    },
+    {
+      "id": "stu-1795280835990-wtewh",
+      "full_name": "Samia",
+      "student_id": "252-35-110",
+      "normalized_student_id": "252-35-110",
+      "created_at": "2026-11-21T17:07:15.99+00:00",
+      "updated_at": "2026-11-21T17:07:15.99+00:00"
+    },
+    {
+      "id": "stu-1795280835990-xxz5j",
+      "full_name": "Ove",
+      "student_id": "252-35-234",
+      "normalized_student_id": "252-35-234",
+      "created_at": "2026-11-21T17:07:15.99+00:00",
+      "updated_at": "2026-11-21T17:07:15.99+00:00"
+    },
+    {
+      "id": "stu-1795280835990-qxfa2",
+      "full_name": "still don't kmow",
+      "student_id": "252-35-000",
+      "normalized_student_id": "252-35-000",
+      "created_at": "2026-11-21T17:07:15.99+00:00",
+      "updated_at": "2026-11-21T17:07:15.99+00:00"
+    },
+    {
+      "id": "stu-1795281501722-veeuw",
+      "full_name": "Shariar",
+      "student_id": "252-35-181",
+      "normalized_student_id": "252-35-181",
+      "created_at": "2026-11-21T17:18:21.722+00:00",
+      "updated_at": "2026-11-21T17:18:21.722+00:00"
+    },
+    {
+      "id": "stu-1795281501722-sb5si",
+      "full_name": "Turjo",
+      "student_id": "252-35-401",
+      "normalized_student_id": "252-35-401",
+      "created_at": "2026-11-21T17:18:21.722+00:00",
+      "updated_at": "2026-11-21T17:18:21.722+00:00"
+    },
+    {
+      "id": "stu-1795281501722-tf2ah",
+      "full_name": "Tanvir",
+      "student_id": "252-35-433",
+      "normalized_student_id": "252-35-433",
+      "created_at": "2026-11-21T17:18:21.722+00:00",
+      "updated_at": "2026-11-21T17:18:21.722+00:00"
+    },
+    {
+      "id": "stu-1795281501722-gp75v",
+      "full_name": "Rahat",
+      "student_id": "252-35-283",
+      "normalized_student_id": "252-35-283",
+      "created_at": "2026-11-21T17:18:21.722+00:00",
+      "updated_at": "2026-11-21T17:18:21.722+00:00"
+    },
+    {
+      "id": "stu-1795281501722-h342r",
+      "full_name": "Jami",
+      "student_id": "252-35-169",
+      "normalized_student_id": "252-35-169",
+      "created_at": "2026-11-21T17:18:21.722+00:00",
+      "updated_at": "2026-11-21T17:18:21.722+00:00"
+    },
+    {
+      "id": "stu-1795286348143-gnzn5",
+      "full_name": "Test Student",
+      "student_id": "252-35-999",
+      "normalized_student_id": "252-35-999",
+      "created_at": "2026-11-21T18:39:08.143Z",
+      "updated_at": "2026-11-21T18:39:08.143Z"
+    },
+    {
+      "id": "stu-1795288577104-gti5g",
+      "full_name": "Tauhidul Islam",
+      "student_id": "252-35-567",
+      "normalized_student_id": "252-35-567",
+      "created_at": "2026-11-21T19:16:17.104Z",
+      "updated_at": "2026-11-21T19:16:17.104Z"
+    },
+    {
+      "id": "stu-1795288577104-mtsas",
+      "full_name": "Retu Meherin",
+      "student_id": "252-35-578",
+      "normalized_student_id": "252-35-578",
+      "created_at": "2026-11-21T19:16:17.104Z",
+      "updated_at": "2026-11-21T19:16:17.104Z"
+    },
+    {
+      "id": "stu-1795288577104-4j8a6",
+      "full_name": "Sumiya Akter Himu",
+      "student_id": "252-35-563",
+      "normalized_student_id": "252-35-563",
+      "created_at": "2026-11-21T19:16:17.104Z",
+      "updated_at": "2026-11-21T19:16:17.104Z"
+    },
+    {
+      "id": "stu-1795288577104-yb2pm",
+      "full_name": "Afia Tasnim Esha",
+      "student_id": "252-35-583",
+      "normalized_student_id": "252-35-583",
+      "created_at": "2026-11-21T19:16:17.104Z",
+      "updated_at": "2026-11-21T19:16:17.104Z"
+    },
+    {
+      "id": "stu-1795288577104-zxat0",
+      "full_name": "Sourav Rana",
+      "student_id": "252-35-602",
+      "normalized_student_id": "252-35-602",
+      "created_at": "2026-11-21T19:16:17.104Z",
+      "updated_at": "2026-11-21T19:16:17.104Z"
     }
   ],
   "teams": [
@@ -106,9 +394,114 @@
       "capacity": 5,
       "topic": null,
       "leader_membership_id": "mem-1795275238897-a9wep",
+      "status": "FULL",
+      "slide_link": null,
+      "slide_file_name": "Computer Fundamentals - Final - Spring 25.pdf",
+      "slide_file_url": "blob:https://diu-team.unleft.space/1e08fcf6-fbe8-4bc8-a94f-92d215de4778",
+      "created_at": "2026-11-21T15:33:58.897+00:00",
+      "updated_at": "2026-11-21T20:09:15.735+00:00"
+    },
+    {
+      "id": "team-1795278047001-8dqde",
+      "course_offering_id": "offering-se214-h",
+      "presentation_number": 4,
+      "team_name": "Team 4",
+      "capacity": 5,
+      "topic": null,
+      "leader_membership_id": "mem-1795278047001-8r4sb",
+      "status": "FULL",
+      "slide_link": null,
+      "slide_file_name": null,
+      "slide_file_url": null,
+      "created_at": "2026-11-21T16:20:47.001+00:00",
+      "updated_at": "2026-11-21T16:20:47.001+00:00"
+    },
+    {
+      "id": "team-1795278406166-8q20h",
+      "course_offering_id": "offering-se214-h",
+      "presentation_number": 2,
+      "team_name": "AlphaQ",
+      "capacity": 5,
+      "topic": null,
+      "leader_membership_id": "mem-1795278406166-rt005",
+      "status": "FULL",
+      "slide_link": null,
+      "slide_file_name": null,
+      "slide_file_url": null,
+      "created_at": "2026-11-21T16:26:46.166+00:00",
+      "updated_at": "2026-11-21T16:56:11.79+00:00"
+    },
+    {
+      "id": "team-1795278899714-b1co0",
+      "course_offering_id": "offering-se214-h",
+      "presentation_number": 8,
+      "team_name": "Fervants",
+      "capacity": 5,
+      "topic": null,
+      "leader_membership_id": "mem-1795278899714-q1h2u",
+      "status": "FULL",
+      "slide_link": null,
+      "slide_file_name": null,
+      "slide_file_url": null,
+      "created_at": "2026-11-21T16:34:59.714+00:00",
+      "updated_at": "2026-11-21T16:51:03.316+00:00"
+    },
+    {
+      "id": "team-1795279130400-fe8xg",
+      "course_offering_id": "offering-se214-h",
+      "presentation_number": 6,
+      "team_name": "lazy Pandas",
+      "capacity": 5,
+      "topic": null,
+      "leader_membership_id": "mem-1795279130400-qj1j8",
       "status": "OPEN",
-      "created_at": "2026-11-21T15:33:58.897Z",
-      "updated_at": "2026-11-21T15:33:58.897Z"
+      "slide_link": null,
+      "slide_file_name": null,
+      "slide_file_url": null,
+      "created_at": "2026-11-21T16:38:50.4+00:00",
+      "updated_at": "2026-11-21T16:38:50.4+00:00"
+    },
+    {
+      "id": "team-1795280835990-y2jcc",
+      "course_offering_id": "offering-se214-h",
+      "presentation_number": 5,
+      "team_name": "Team 5",
+      "capacity": 5,
+      "topic": null,
+      "leader_membership_id": "mem-1795280835990-uo2ex",
+      "status": "FULL",
+      "slide_link": null,
+      "slide_file_name": null,
+      "slide_file_url": null,
+      "created_at": "2026-11-21T17:07:15.99+00:00",
+      "updated_at": "2026-11-21T17:07:15.991+00:00"
+    },
+    {
+      "id": "team-1795281501722-c9pel",
+      "course_offering_id": "offering-se214-h",
+      "presentation_number": 3,
+      "team_name": "Team 7",
+      "capacity": 5,
+      "topic": null,
+      "leader_membership_id": "mem-1795281501722-0wkkf",
+      "status": "FULL",
+      "slide_link": null,
+      "slide_file_name": null,
+      "slide_file_url": null,
+      "created_at": "2026-11-21T17:18:21.722+00:00",
+      "updated_at": "2026-11-21T17:19:23.8+00:00"
+    },
+    {
+      "id": "team-1795288577104-68cda",
+      "course_offering_id": "offering-se214-h",
+      "presentation_number": 7,
+      "team_name": "Pentene",
+      "capacity": 5,
+      "topic": null,
+      "leader_membership_id": "mem-1795288577104-0ofny",
+      "status": "FULL",
+      "created_at": "2026-11-21T19:16:17.105Z",
+      "updated_at": "2026-11-21T19:16:17.105Z"
     }
   ],
   "memberships": [
@@ -119,8 +512,8 @@
       "course_offering_id": "offering-se214-h",
       "role": "LEADER",
       "status": "ACTIVE",
-      "joined_at": "2026-11-21T15:33:58.897Z",
-      "updated_at": "2026-11-21T15:33:58.897Z"
+      "joined_at": "2026-11-21T15:33:58.897+00:00",
+      "updated_at": "2026-11-21T15:33:58.897+00:00"
     },
     {
       "id": "mem-1795275238897-nubtn",
@@ -129,8 +522,8 @@
       "course_offering_id": "offering-se214-h",
       "role": "MEMBER",
       "status": "ACTIVE",
-      "joined_at": "2026-11-21T15:33:58.897Z",
-      "updated_at": "2026-11-21T15:33:58.897Z"
+      "joined_at": "2026-11-21T15:33:58.897+00:00",
+      "updated_at": "2026-11-21T15:33:58.897+00:00"
     },
     {
       "id": "mem-1795275238897-ydzsw",
@@ -139,8 +532,8 @@
       "course_offering_id": "offering-se214-h",
       "role": "MEMBER",
       "status": "ACTIVE",
-      "joined_at": "2026-11-21T15:33:58.897Z",
-      "updated_at": "2026-11-21T15:33:58.897Z"
+      "joined_at": "2026-11-21T15:33:58.897+00:00",
+      "updated_at": "2026-11-21T15:33:58.897+00:00"
     },
     {
       "id": "mem-1795275238897-fhpxn",
@@ -148,9 +541,369 @@
       "student_id": "stu-1795275238897-ozen4",
       "course_offering_id": "offering-se214-h",
       "role": "MEMBER",
-      "status": "ACTIVE",
+      "status": "REMOVED",
       "joined_at": "2026-11-21T15:33:58.897Z",
-      "updated_at": "2026-11-21T15:33:58.897Z"
+      "updated_at": "2026-11-21T17:39:15.203Z"
+    },
+    {
+      "id": "mem-1795277210467-vt18w",
+      "team_id": "team-1795275238897-34x4n",
+      "student_id": "stu-1795277210467-e2w77",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:06:50.467+00:00",
+      "updated_at": "2026-11-21T16:06:50.467+00:00"
+    },
+    {
+      "id": "mem-1795278047001-8r4sb",
+      "team_id": "team-1795278047001-8dqde",
+      "student_id": "stu-1795278047000-jsl88",
+      "course_offering_id": "offering-se214-h",
+      "role": "LEADER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:20:47.001+00:00",
+      "updated_at": "2026-11-21T16:20:47.001+00:00"
+    },
+    {
+      "id": "mem-1795278047001-bvwzj",
+      "team_id": "team-1795278047001-8dqde",
+      "student_id": "stu-1795278047000-gai42",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:20:47.001+00:00",
+      "updated_at": "2026-11-21T16:20:47.001+00:00"
+    },
+    {
+      "id": "mem-1795278047001-ll521",
+      "team_id": "team-1795278047001-8dqde",
+      "student_id": "stu-1795278047000-6hx28",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:20:47.001+00:00",
+      "updated_at": "2026-11-21T16:20:47.001+00:00"
+    },
+    {
+      "id": "mem-1795278047001-qh7o0",
+      "team_id": "team-1795278047001-8dqde",
+      "student_id": "stu-1795278047001-fh770",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:20:47.001+00:00",
+      "updated_at": "2026-11-21T16:20:47.001+00:00"
+    },
+    {
+      "id": "mem-1795278047001-7a0yl",
+      "team_id": "team-1795278047001-8dqde",
+      "student_id": "stu-1795278047001-il9su",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:20:47.001+00:00",
+      "updated_at": "2026-11-21T16:20:47.001+00:00"
+    },
+    {
+      "id": "mem-1795278406166-rt005",
+      "team_id": "team-1795278406166-8q20h",
+      "student_id": "stu-1795278406166-elu9x",
+      "course_offering_id": "offering-se214-h",
+      "role": "LEADER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:26:46.166+00:00",
+      "updated_at": "2026-11-21T16:26:46.166+00:00"
+    },
+    {
+      "id": "mem-1795278406166-7x9bx",
+      "team_id": "team-1795278406166-8q20h",
+      "student_id": "stu-1795278406166-vwfel",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:26:46.166+00:00",
+      "updated_at": "2026-11-21T16:26:46.166+00:00"
+    },
+    {
+      "id": "mem-1795278406166-w8w3j",
+      "team_id": "team-1795278406166-8q20h",
+      "student_id": "stu-1795278406166-51u9x",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:26:46.166+00:00",
+      "updated_at": "2026-11-21T16:26:46.166+00:00"
+    },
+    {
+      "id": "mem-1795278406166-wh9k7",
+      "team_id": "team-1795278406166-8q20h",
+      "student_id": "stu-1795278406166-gi7ns",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:26:46.166+00:00",
+      "updated_at": "2026-11-21T16:26:46.166+00:00"
+    },
+    {
+      "id": "mem-1795278406166-iwk8i",
+      "team_id": "team-1795278406166-8q20h",
+      "student_id": "stu-1795278406166-947pj",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:26:46.166+00:00",
+      "updated_at": "2026-11-21T16:26:46.166+00:00"
+    },
+    {
+      "id": "mem-1795278899714-q1h2u",
+      "team_id": "team-1795278899714-b1co0",
+      "student_id": "stu-1795278899714-858qw",
+      "course_offering_id": "offering-se214-h",
+      "role": "LEADER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:34:59.714+00:00",
+      "updated_at": "2026-11-21T16:34:59.714+00:00"
+    },
+    {
+      "id": "mem-1795278899714-kl17b",
+      "team_id": "team-1795278899714-b1co0",
+      "student_id": "stu-1795278899714-8h2fj",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:34:59.714+00:00",
+      "updated_at": "2026-11-21T16:34:59.714+00:00"
+    },
+    {
+      "id": "mem-1795278899714-f1b8y",
+      "team_id": "team-1795278899714-b1co0",
+      "student_id": "stu-1795278899714-n7pg3",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:34:59.714+00:00",
+      "updated_at": "2026-11-21T16:34:59.714+00:00"
+    },
+    {
+      "id": "mem-1795278899714-gmi05",
+      "team_id": "team-1795278899714-b1co0",
+      "student_id": "stu-1795278899714-6g5xp",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:34:59.714+00:00",
+      "updated_at": "2026-11-21T16:34:59.714+00:00"
+    },
+    {
+      "id": "mem-1795278899714-hd97f",
+      "team_id": "team-1795278899714-b1co0",
+      "student_id": "stu-1795278899714-ha8jz",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:34:59.714+00:00",
+      "updated_at": "2026-11-21T16:34:59.714+00:00"
+    },
+    {
+      "id": "mem-1795279130400-qj1j8",
+      "team_id": "team-1795279130400-fe8xg",
+      "student_id": "stu-1795279130399-dli6d",
+      "course_offering_id": "offering-se214-h",
+      "role": "LEADER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:38:50.4+00:00",
+      "updated_at": "2026-11-21T16:38:50.4+00:00"
+    },
+    {
+      "id": "mem-1795279130400-l8ney",
+      "team_id": "team-1795279130400-fe8xg",
+      "student_id": "stu-1795279130400-skaeo",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:38:50.4+00:00",
+      "updated_at": "2026-11-21T16:38:50.4+00:00"
+    },
+    {
+      "id": "mem-1795279130400-clnb7",
+      "team_id": "team-1795279130400-fe8xg",
+      "student_id": "stu-1795279130400-u4eks",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:38:50.4+00:00",
+      "updated_at": "2026-11-21T16:38:50.4+00:00"
+    },
+    {
+      "id": "mem-1795279130400-7o7s1",
+      "team_id": "team-1795279130400-fe8xg",
+      "student_id": "stu-1795279130400-si29v",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T16:38:50.4+00:00",
+      "updated_at": "2026-11-21T16:38:50.4+00:00"
+    },
+    {
+      "id": "mem-1795280835990-uo2ex",
+      "team_id": "team-1795280835990-y2jcc",
+      "student_id": "stu-1795280835989-ap16w",
+      "course_offering_id": "offering-se214-h",
+      "role": "LEADER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T17:07:15.991+00:00",
+      "updated_at": "2026-11-21T17:07:15.991+00:00"
+    },
+    {
+      "id": "mem-1795280835991-6fk5f",
+      "team_id": "team-1795280835990-y2jcc",
+      "student_id": "stu-1795280835989-62apw",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T17:07:15.991+00:00",
+      "updated_at": "2026-11-21T17:07:15.991+00:00"
+    },
+    {
+      "id": "mem-1795280835991-8tom5",
+      "team_id": "team-1795280835990-y2jcc",
+      "student_id": "stu-1795280835990-wtewh",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T17:07:15.991+00:00",
+      "updated_at": "2026-11-21T17:07:15.991+00:00"
+    },
+    {
+      "id": "mem-1795280835991-4i0d7",
+      "team_id": "team-1795280835990-y2jcc",
+      "student_id": "stu-1795280835990-xxz5j",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T17:07:15.991+00:00",
+      "updated_at": "2026-11-21T17:07:15.991+00:00"
+    },
+    {
+      "id": "mem-1795280835991-m8dtz",
+      "team_id": "team-1795280835990-y2jcc",
+      "student_id": "stu-1795280835990-qxfa2",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T17:07:15.991+00:00",
+      "updated_at": "2026-11-21T17:07:15.991+00:00"
+    },
+    {
+      "id": "mem-1795281501722-0wkkf",
+      "team_id": "team-1795281501722-c9pel",
+      "student_id": "stu-1795281501722-veeuw",
+      "course_offering_id": "offering-se214-h",
+      "role": "LEADER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T17:18:21.722+00:00",
+      "updated_at": "2026-11-21T17:18:21.722+00:00"
+    },
+    {
+      "id": "mem-1795281501722-joiuw",
+      "team_id": "team-1795281501722-c9pel",
+      "student_id": "stu-1795281501722-sb5si",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T17:18:21.722+00:00",
+      "updated_at": "2026-11-21T17:18:21.722+00:00"
+    },
+    {
+      "id": "mem-1795281501722-iln31",
+      "team_id": "team-1795281501722-c9pel",
+      "student_id": "stu-1795281501722-tf2ah",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T17:18:21.722+00:00",
+      "updated_at": "2026-11-21T17:18:21.722+00:00"
+    },
+    {
+      "id": "mem-1795281501722-s1he1",
+      "team_id": "team-1795281501722-c9pel",
+      "student_id": "stu-1795281501722-gp75v",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T17:18:21.722+00:00",
+      "updated_at": "2026-11-21T17:18:21.722+00:00"
+    },
+    {
+      "id": "mem-1795281501722-pa6zy",
+      "team_id": "team-1795281501722-c9pel",
+      "student_id": "stu-1795281501722-h342r",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T17:18:21.722+00:00",
+      "updated_at": "2026-11-21T17:18:21.722+00:00"
+    },
+    {
+      "id": "mem-1795288577104-0ofny",
+      "team_id": "team-1795288577104-68cda",
+      "student_id": "stu-1795288577104-gti5g",
+      "course_offering_id": "offering-se214-h",
+      "role": "LEADER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T19:16:17.105Z",
+      "updated_at": "2026-11-21T19:16:17.105Z"
+    },
+    {
+      "id": "mem-1795288577105-l5k6q",
+      "team_id": "team-1795288577104-68cda",
+      "student_id": "stu-1795288577104-mtsas",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T19:16:17.105Z",
+      "updated_at": "2026-11-21T19:16:17.105Z"
+    },
+    {
+      "id": "mem-1795288577105-fc5mv",
+      "team_id": "team-1795288577104-68cda",
+      "student_id": "stu-1795288577104-4j8a6",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T19:16:17.105Z",
+      "updated_at": "2026-11-21T19:16:17.105Z"
+    },
+    {
+      "id": "mem-1795288577105-bj1ne",
+      "team_id": "team-1795288577104-68cda",
+      "student_id": "stu-1795288577104-yb2pm",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T19:16:17.105Z",
+      "updated_at": "2026-11-21T19:16:17.105Z"
+    },
+    {
+      "id": "mem-1795288577105-ms78n",
+      "team_id": "team-1795288577104-68cda",
+      "student_id": "stu-1795288577104-zxat0",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T19:16:17.105Z",
+      "updated_at": "2026-11-21T19:16:17.105Z"
+    },
+    {
+      "id": "mem-1795291755735-nd480",
+      "team_id": "team-1795275238897-34x4n",
+      "student_id": "stu-1795275238897-ozen4",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T20:09:15.735+00:00",
+      "updated_at": "2026-11-21T20:09:15.735+00:00"
     }
   ],
   "credentials": [
@@ -164,10 +917,198 @@
       "expires_at": null,
       "revoked_at": null,
       "last_used_at": null
+    },
+    {
+      "id": "cred-tm-1795278047001",
+      "credential_type": "TEAM_MANAGEMENT",
+      "team_id": "team-1795278047001-8dqde",
+      "membership_id": null,
+      "token_hash": "df25d54beb56dbf08a6d6043b50e5debe5a5887b40589fa24e999067149af53a",
+      "created_at": "2026-11-21T16:20:47.001Z",
+      "expires_at": null,
+      "revoked_at": null,
+      "last_used_at": null
+    },
+    {
+      "id": "cred-tm-1795278406166",
+      "credential_type": "TEAM_MANAGEMENT",
+      "team_id": "team-1795278406166-8q20h",
+      "membership_id": null,
+      "token_hash": "33d23fe7db65d93446ebae25a3496bd4e384114da702a082ec8e404fcf1ae5d3",
+      "created_at": "2026-11-21T16:26:46.166Z",
+      "expires_at": null,
+      "revoked_at": null,
+      "last_used_at": null
+    },
+    {
+      "id": "cred-tm-1795278899714",
+      "credential_type": "TEAM_MANAGEMENT",
+      "team_id": "team-1795278899714-b1co0",
+      "membership_id": null,
+      "token_hash": "f68342f49413e85eb2a1d4ddb7d749da5d97edb238d4a696b26180a4b6e77247",
+      "created_at": "2026-11-21T16:34:59.714Z",
+      "expires_at": null,
+      "revoked_at": null,
+      "last_used_at": null
+    },
+    {
+      "id": "cred-tm-1795279130400",
+      "credential_type": "TEAM_MANAGEMENT",
+      "team_id": "team-1795279130400-fe8xg",
+      "membership_id": null,
+      "token_hash": "4004b5cbe0a128f0e4757266513c348234747e3ef3525e96e083efcf767b3c7e",
+      "created_at": "2026-11-21T16:38:50.400Z",
+      "expires_at": null,
+      "revoked_at": null,
+      "last_used_at": null
+    },
+    {
+      "id": "cred-tm-1795280835991",
+      "credential_type": "TEAM_MANAGEMENT",
+      "team_id": "team-1795280835990-y2jcc",
+      "membership_id": null,
+      "token_hash": "26986477c4984bbec369bfb651f3bdd0b0c7500f7e76867344543861132f8fec",
+      "created_at": "2026-11-21T17:07:15.991Z",
+      "expires_at": null,
+      "revoked_at": null,
+      "last_used_at": null
+    },
+    {
+      "id": "cred-tm-1795281501723",
+      "credential_type": "TEAM_MANAGEMENT",
+      "team_id": "team-1795281501722-c9pel",
+      "membership_id": null,
+      "token_hash": "c8334123d78e56d997bf78eb56746ec04bb4882d67b488e9feab128a866fe5fc",
+      "created_at": "2026-11-21T17:18:21.723Z",
+      "expires_at": null,
+      "revoked_at": null,
+      "last_used_at": null
+    },
+    {
+      "id": "cred-tm-1795288577105",
+      "credential_type": "TEAM_MANAGEMENT",
+      "team_id": "team-1795288577104-68cda",
+      "membership_id": null,
+      "token_hash": "f891ec19373e9461661429c667fbe2e7ae7f239a08d3385dffbabf85ce054c8f",
+      "created_at": "2026-11-21T19:16:17.105Z",
+      "expires_at": null,
+      "revoked_at": null,
+      "last_used_at": null
     }
   ],
-  "joinRequests": [],
+  "joinRequests": [
+    {
+      "id": "req-1795276890214-kzc31",
+      "team_id": "team-1795275238897-34x4n",
+      "course_offering_id": "offering-se214-h",
+      "student_name": "Sayma Ferdousi Fariha",
+      "student_id": "252-35-103",
+      "status": "ACCEPTED",
+      "created_at": "2026-11-21T16:01:30.214Z",
+      "updated_at": "2026-11-21T16:06:50.467Z"
+    }
+  ],
   "auditLogs": [
+    {
+      "id": "log-1795291757095-987",
+      "actor_admin_id": null,
+      "actor_email": "superadmin@daffodilvarsity.edu.bd",
+      "action": "ADMIN_ADD_MEMBER",
+      "target_type": "TEAM",
+      "target_id": "team-1795275238897-34x4n",
+      "details": {
+        "team_id": "team-1795275238897-34x4n",
+        "student_id": "252-35-582",
+        "full_name": "Toriqul Islam",
+        "role": "MEMBER"
+      },
+      "created_at": "2026-11-21T20:09:17.095Z"
+    },
+    {
+      "id": "log-1795291755058-280",
+      "actor_admin_id": null,
+      "actor_email": "superadmin@daffodilvarsity.edu.bd",
+      "action": "ADMIN_REMOVE_MEMBER",
+      "target_type": "MEMBERSHIP",
+      "target_id": "mem-1795291212998-6nhcd",
+      "details": {
+        "reason": "Removed by Team Leader",
+        "team_id": "team-1795275238897-34x4n",
+        "student_id": "stu-1795275238897-ozen4"
+      },
+      "created_at": "2026-11-21T20:09:15.058Z"
+    },
+    {
+      "id": "log-1795291214918-531",
+      "actor_admin_id": null,
+      "actor_email": "superadmin@daffodilvarsity.edu.bd",
+      "action": "ADMIN_ADD_MEMBER",
+      "target_type": "TEAM",
+      "target_id": "team-1795275238897-34x4n",
+      "details": {
+        "team_id": "team-1795275238897-34x4n",
+        "student_id": "252-35-582",
+        "full_name": "Toriqul Islam",
+        "role": "MEMBER"
+      },
+      "created_at": "2026-11-21T20:00:14.918Z"
+    },
+    {
+      "id": "log-1795286351489-826",
+      "actor_admin_id": null,
+      "actor_email": "superadmin@daffodilvarsity.edu.bd",
+      "action": "ADMIN_REMOVE_MEMBER",
+      "target_type": "MEMBERSHIP",
+      "target_id": "mem-1795286348143-j7fu5",
+      "details": {
+        "reason": "Removed by Team Leader",
+        "team_id": "team-1795275238897-34x4n",
+        "student_id": "stu-1795286348143-gnzn5"
+      },
+      "created_at": "2026-11-21T18:39:11.489Z"
+    },
+    {
+      "id": "log-1795286349530-222",
+      "actor_admin_id": null,
+      "actor_email": "superadmin@daffodilvarsity.edu.bd",
+      "action": "ADMIN_ADD_MEMBER",
+      "target_type": "TEAM",
+      "target_id": "team-1795275238897-34x4n",
+      "details": {
+        "team_id": "team-1795275238897-34x4n",
+        "student_id": "252-35-999",
+        "full_name": "Test Student",
+        "role": "MEMBER"
+      },
+      "created_at": "2026-11-21T18:39:09.530Z"
+    },
+    {
+      "id": "log-1795286087998-927",
+      "actor_admin_id": null,
+      "actor_email": "superadmin@daffodilvarsity.edu.bd",
+      "action": "ADMIN_REMOVE_MEMBER",
+      "target_type": "MEMBERSHIP",
+      "target_id": "mem-1795283921221-gieop",
+      "details": {
+        "reason": "Removed by Team Leader",
+        "team_id": "team-1795275238897-34x4n",
+        "student_id": "stu-1795275238897-ozen4"
+      },
+      "created_at": "2026-11-21T18:34:47.998Z"
+    },
+    {
+      "id": "log-1795282755551-185",
+      "actor_admin_id": null,
+      "actor_email": "superadmin@daffodilvarsity.edu.bd",
+      "action": "ADMIN_REMOVE_MEMBER",
+      "target_type": "MEMBERSHIP",
+      "target_id": "mem-1795275238897-fhpxn",
+      "details": {
+        "reason": "Removed by Team Leader",
+        "team_id": "team-1795275238897-34x4n"
+      },
+      "created_at": "2026-11-21T17:39:15.551Z"
+    },
     {
       "id": "log-1795273426276-106",
       "actor_admin_id": null,
