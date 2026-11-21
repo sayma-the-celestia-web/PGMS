@@ -36,7 +36,7 @@
       "max_teams_limit": 10,
       "topic_enabled": false,
       "created_at": "2026-11-21T11:12:18.459Z",
-      "updated_at": "2026-11-21T13:49:00.000Z"
+      "updated_at": "2026-11-21T15:03:03.253Z"
     }
   ],
   "students": [
@@ -63,82 +63,126 @@
       "normalized_student_id": "252-35-104",
       "created_at": "2026-11-21T12:45:22.559Z",
       "updated_at": "2026-11-21T12:45:22.559Z"
+    },
+    {
+      "id": "stu-1795275238896-bxswo",
+      "full_name": "Golam Morshed Eashan",
+      "student_id": "252-35-242",
+      "normalized_student_id": "252-35-242",
+      "created_at": "2026-11-21T15:33:58.896Z",
+      "updated_at": "2026-11-21T15:33:58.897Z"
+    },
+    {
+      "id": "stu-1795275238897-qgcto",
+      "full_name": "Tasmina Akter Tisha",
+      "student_id": "252-35-384",
+      "normalized_student_id": "252-35-384",
+      "created_at": "2026-11-21T15:33:58.897Z",
+      "updated_at": "2026-11-21T15:33:58.897Z"
+    },
+    {
+      "id": "stu-1795275238897-nukmu",
+      "full_name": "Lamia Jahan Jui",
+      "student_id": "252-35-409",
+      "normalized_student_id": "252-35-409",
+      "created_at": "2026-11-21T15:33:58.897Z",
+      "updated_at": "2026-11-21T15:33:58.897Z"
+    },
+    {
+      "id": "stu-1795275238897-ozen4",
+      "full_name": "Toriqul Islam",
+      "student_id": "252-35-582",
+      "normalized_student_id": "252-35-582",
+      "created_at": "2026-11-21T15:33:58.897Z",
+      "updated_at": "2026-11-21T15:33:58.897Z"
     }
   ],
   "teams": [
     {
-      "id": "team-1795265122555-vp7bt",
+      "id": "team-1795275238897-34x4n",
       "course_offering_id": "offering-se214-h",
       "presentation_number": 1,
-      "team_name": "Neural Ninjas Elite",
-      "capacity": 4,
-      "topic": "Transformer Attention Mechanisms",
-      "leader_membership_id": "mem-1795265122555-ldux7",
+      "team_name": "Algo",
+      "capacity": 5,
+      "topic": null,
+      "leader_membership_id": "mem-1795275238897-a9wep",
       "status": "OPEN",
-      "created_at": "2026-11-21T12:45:22.555Z",
-      "updated_at": "2026-11-21T12:45:22.559Z",
-      "slide_link": "https://docs.google.com/presentation/d/sample123",
-      "slide_file_name": "presentation_neural_ninjas.pptx"
+      "created_at": "2026-11-21T15:33:58.897Z",
+      "updated_at": "2026-11-21T15:33:58.897Z"
     }
   ],
   "memberships": [
     {
-      "id": "mem-1795265122555-ldux7",
-      "team_id": "team-1795265122555-vp7bt",
-      "student_id": "stu-1795265122555-ok901",
+      "id": "mem-1795275238897-a9wep",
+      "team_id": "team-1795275238897-34x4n",
+      "student_id": "stu-1795275238896-bxswo",
       "course_offering_id": "offering-se214-h",
       "role": "LEADER",
       "status": "ACTIVE",
-      "joined_at": "2026-11-21T12:45:22.555Z",
-      "updated_at": "2026-11-21T12:45:22.555Z"
+      "joined_at": "2026-11-21T15:33:58.897Z",
+      "updated_at": "2026-11-21T15:33:58.897Z"
     },
     {
-      "id": "mem-1795265122555-u2u4y",
-      "team_id": "team-1795265122555-vp7bt",
-      "student_id": "stu-1795265122555-5hz28",
+      "id": "mem-1795275238897-nubtn",
+      "team_id": "team-1795275238897-34x4n",
+      "student_id": "stu-1795275238897-qgcto",
       "course_offering_id": "offering-se214-h",
       "role": "MEMBER",
       "status": "ACTIVE",
-      "joined_at": "2026-11-21T12:45:22.555Z",
-      "updated_at": "2026-11-21T12:45:22.555Z"
+      "joined_at": "2026-11-21T15:33:58.897Z",
+      "updated_at": "2026-11-21T15:33:58.897Z"
     },
     {
-      "id": "mem-1795265122559-hn9re",
-      "team_id": "team-1795265122555-vp7bt",
-      "student_id": "stu-1795265122559-aw0oz",
+      "id": "mem-1795275238897-ydzsw",
+      "team_id": "team-1795275238897-34x4n",
+      "student_id": "stu-1795275238897-nukmu",
       "course_offering_id": "offering-se214-h",
       "role": "MEMBER",
       "status": "ACTIVE",
-      "joined_at": "2026-11-21T12:45:22.559Z",
-      "updated_at": "2026-11-21T12:45:22.559Z"
+      "joined_at": "2026-11-21T15:33:58.897Z",
+      "updated_at": "2026-11-21T15:33:58.897Z"
+    },
+    {
+      "id": "mem-1795275238897-fhpxn",
+      "team_id": "team-1795275238897-34x4n",
+      "student_id": "stu-1795275238897-ozen4",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-21T15:33:58.897Z",
+      "updated_at": "2026-11-21T15:33:58.897Z"
     }
   ],
   "credentials": [
     {
-      "id": "cred-tm-1795265122556",
+      "id": "cred-tm-1795275238898",
       "credential_type": "TEAM_MANAGEMENT",
-      "team_id": "team-1795265122555-vp7bt",
+      "team_id": "team-1795275238897-34x4n",
       "membership_id": null,
-      "token_hash": "045491e7cbb8c244bf614183ee568b7985fbc19213d265e2a0c9fcf70033d155",
-      "created_at": "2026-11-21T12:45:22.556Z",
+      "token_hash": "bdea0f17edbadcc32268f70c1910974dc4e7b2725145c375f9ae126b20548a20",
+      "created_at": "2026-11-21T15:33:58.898Z",
       "expires_at": null,
       "revoked_at": null,
       "last_used_at": null
     }
   ],
-  "joinRequests": [
-    {
-      "id": "req-1795265122558-5355s",
-      "team_id": "team-1795265122555-vp7bt",
-      "course_offering_id": "offering-se214-h",
-      "student_name": "Mahmud Hasan",
-      "student_id": "252-35-104",
-      "status": "ACCEPTED",
-      "created_at": "2026-11-21T12:45:22.558Z",
-      "updated_at": "2026-11-21T12:45:22.559Z"
-    }
-  ],
+  "joinRequests": [],
   "auditLogs": [
+    {
+      "id": "log-1795273426276-106",
+      "actor_admin_id": null,
+      "actor_email": "superadmin@daffodilvarsity.edu.bd",
+      "action": "DELETE_TEAM",
+      "target_type": "TEAM",
+      "target_id": "team-1795265122555-vp7bt",
+      "details": {
+        "teamId": "team-1795265122555-vp7bt",
+        "teamName": "Neural Ninjas Elite",
+        "courseOfferingId": "offering-se214-h",
+        "presentationNumber": 1
+      },
+      "created_at": "2026-11-21T15:03:46.276Z"
+    },
     {
       "id": "log-1",
       "actor_admin_id": null,

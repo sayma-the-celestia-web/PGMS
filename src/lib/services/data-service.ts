@@ -39,7 +39,9 @@ const STORAGE_PATH = isServerless ? TMP_STORAGE_PATH : LOCAL_STORAGE_PATH;
 
 function isSupabaseConfigured(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   return !!(url && key && !url.includes("placeholder-project"));
 }
 
@@ -67,12 +69,13 @@ class InMemoryDB {
   ];
 
   private lastCloudSync = 0;
-  private isCloudSyncing = false;
+  private hasEverSyncedFromCloud = false;
+  private cloudSyncPromise: Promise<void> | null = null;
 
   constructor() {
     this.loadFromDisk();
     if (isSupabaseConfigured()) {
-      this.syncFromCloud().catch(() => {});
+      this.syncFromCloud(true).catch(() => {});
     }
   }
 
@@ -160,6 +163,18 @@ class InMemoryDB {
 
   async syncToCloud(): Promise<void> {
     if (!isSupabaseConfigured()) return;
+
+    // Safety: If cloud sync is currently in progress, wait for it
+    if (this.cloudSyncPromise) {
+      await this.cloudSyncPromise;
+    }
+
+    // Safety guard: If we haven't synced from cloud yet, pull from cloud first
+    // so we never overwrite cloud storage with uninitialized in-memory state
+    if (!this.hasEverSyncedFromCloud) {
+      await this.syncFromCloud(true);
+    }
+
     try {
       const client = createAdminSupabaseClient();
       if (!client) return;
@@ -172,6 +187,7 @@ class InMemoryDB {
           contentType: "application/json",
         });
       this.lastCloudSync = Date.now();
+      this.hasEverSyncedFromCloud = true;
     } catch (e) {
       console.warn("Failed to sync storage to Supabase:", e);
     }
@@ -179,32 +195,55 @@ class InMemoryDB {
 
   async syncFromCloud(force = false): Promise<void> {
     if (!isSupabaseConfigured()) return;
-    const now = Date.now();
-    if (!force && now - this.lastCloudSync < 2000) return;
-    if (this.isCloudSyncing) return;
 
-    this.isCloudSyncing = true;
-    try {
-      const client = createAdminSupabaseClient();
-      if (!client) return;
-
-      const { data, error } = await client.storage
-        .from("pgms-state")
-        .download("pgms-storage.json");
-
-      if (!error && data) {
-        const text = await data.text();
-        this.populateFromJSON(text);
-        this.lastCloudSync = Date.now();
-        try {
-          fs.writeFileSync(STORAGE_PATH, text, "utf-8");
-        } catch {}
-      }
-    } catch (e) {
-      console.warn("Failed to pull from Supabase storage:", e);
-    } finally {
-      this.isCloudSyncing = false;
+    // If an active sync is already in flight, await it!
+    if (this.cloudSyncPromise) {
+      await this.cloudSyncPromise;
+      if (!force) return;
     }
+
+    const now = Date.now();
+    if (!force && this.hasEverSyncedFromCloud && now - this.lastCloudSync < 2000) {
+      return;
+    }
+
+    this.cloudSyncPromise = (async () => {
+      try {
+        const client = createAdminSupabaseClient();
+        if (!client) return;
+
+        const { data, error } = await client.storage
+          .from("pgms-state")
+          .download("pgms-storage.json");
+
+        if (!error && data) {
+          const text = await data.text();
+          this.populateFromJSON(text);
+          this.lastCloudSync = Date.now();
+          this.hasEverSyncedFromCloud = true;
+          try {
+            const dir = path.dirname(STORAGE_PATH);
+            if (!fs.existsSync(dir)) {
+              fs.mkdirSync(dir, { recursive: true });
+            }
+            fs.writeFileSync(STORAGE_PATH, text, "utf-8");
+          } catch {}
+          if (STORAGE_PATH !== LOCAL_STORAGE_PATH) {
+            try {
+              if (fs.existsSync(LOCAL_STORAGE_DIR)) {
+                fs.writeFileSync(LOCAL_STORAGE_PATH, text, "utf-8");
+              }
+            } catch {}
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to pull from Supabase storage:", e);
+      } finally {
+        this.cloudSyncPromise = null;
+      }
+    })();
+
+    await this.cloudSyncPromise;
   }
 
   // Concurrency mutex lock for atomic operations
@@ -1038,13 +1077,25 @@ export class DataService {
     leaderName: string,
     leaderStudentId: string
   ): Promise<LeaderLoginResult> {
-    await this.syncFromCloud();
+    await this.syncFromCloud(true);
     const normId = normalizeStudentId(leaderStudentId);
     if (!normId) {
       return { success: false, error: "Please provide a valid Student ID." };
     }
 
-    const student = db.students.find((s) => s.normalized_student_id === normId);
+    const cleanInputName = leaderName.trim().toLowerCase().replace(/\s+/g, " ");
+    const rawIdDigits = leaderStudentId.replace(/\D/g, "");
+
+    // Find student record with resilient matching (normalized ID, raw ID, or pure digits)
+    const student = db.students.find((s) => {
+      const sNorm = s.normalized_student_id || normalizeStudentId(s.student_id);
+      return (
+        sNorm === normId ||
+        s.student_id.trim() === leaderStudentId.trim() ||
+        (rawIdDigits.length >= 6 && s.student_id.replace(/\D/g, "") === rawIdDigits)
+      );
+    });
+
     if (!student) {
       return {
         success: false,
@@ -1052,10 +1103,11 @@ export class DataService {
       };
     }
 
+    const cleanDbName = student.full_name.trim().toLowerCase().replace(/\s+/g, " ");
     const nameMatches =
-      student.full_name.trim().toLowerCase() === leaderName.trim().toLowerCase() ||
-      student.full_name.toLowerCase().includes(leaderName.trim().toLowerCase()) ||
-      leaderName.trim().toLowerCase().includes(student.full_name.toLowerCase());
+      cleanDbName === cleanInputName ||
+      cleanDbName.includes(cleanInputName) ||
+      cleanInputName.includes(cleanDbName);
 
     if (!nameMatches) {
       return {
@@ -1064,15 +1116,22 @@ export class DataService {
       };
     }
 
-    // Find active leader membership
-    const leaderMem = db.memberships.find(
+    // Find active leader membership first
+    let leaderMem = db.memberships.find(
       (m) => m.student_id === student.id && m.role === "LEADER" && m.status === "ACTIVE"
     );
+
+    // If not marked LEADER explicitly, check if student is any active member of an active team
+    if (!leaderMem) {
+      leaderMem = db.memberships.find(
+        (m) => m.student_id === student.id && m.status === "ACTIVE"
+      );
+    }
 
     if (!leaderMem) {
       return {
         success: false,
-        error: `Student "${student.full_name}" is not registered as the Team Leader of any active team.`,
+        error: `Student "${student.full_name}" is not registered in any active presentation team.`,
       };
     }
 
