@@ -45,8 +45,6 @@ function isSupabaseConfigured(): boolean {
 
   if (!url || !key) {
     try {
-      const fs = require("fs");
-      const path = require("path");
       const envPath = path.resolve(process.cwd(), ".env.local");
       if (fs.existsSync(envPath)) {
         const content = fs.readFileSync(envPath, "utf8");
