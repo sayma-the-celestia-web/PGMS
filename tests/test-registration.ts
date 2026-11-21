@@ -6,6 +6,13 @@ async function runTests() {
   console.log("STARTING PGMS TEAM REGISTRATION PLATFORM TEST SUITE");
   console.log("====================================================");
 
+  // Reset runtime test state for deterministic test execution
+  db.teams = [];
+  db.memberships = [];
+  db.credentials = [];
+  db.joinRequests = [];
+  db.students = [];
+
   // Test 1: Fetch initial offerings
   console.log("\n[TEST 1] Testing course offerings fetch...");
   const offerings = await DataService.getCourseOfferings();
@@ -34,6 +41,7 @@ async function runTests() {
     leaderName: "Tanvir Ahmed",
     leaderStudentId: leaderId,
     members: [{ name: "Ayesha Rahman", studentId: member2Id }],
+    isOpenForMembers: true,
   });
 
   if (!regResult.success || !regResult.teamId) {

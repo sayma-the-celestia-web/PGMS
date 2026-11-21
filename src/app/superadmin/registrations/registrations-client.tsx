@@ -34,7 +34,7 @@ export function RegistrationsClient({
   const [minCap, setMinCap] = useState(2);
   const [maxCap, setMaxCap] = useState(5);
   const [maxTeamsLimit, setMaxTeamsLimit] = useState(20);
-  const [topicEnabled, setTopicEnabled] = useState(true);
+  const [topicEnabled, setTopicEnabled] = useState(false);
   const [deadline, setDeadline] = useState(
     new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 16)
   );

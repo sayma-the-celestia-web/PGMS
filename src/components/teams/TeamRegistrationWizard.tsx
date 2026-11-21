@@ -90,23 +90,26 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
   // Pattern strictly checking 252-35-242
   const idRegex = /^\d{3}-\d{2}-\d{3}$/;
 
-  // Open for new members toggle (when registering with fewer members than max team capacity)
-  const [isOpenForMembers, setIsOpenForMembers] = useState(true);
+  // Open for new members toggle (available ONLY when chosen team size is less than max capacity)
+  const [isOpenForMembers, setIsOpenForMembers] = useState(false);
 
   // Compute filled members count
   const filledMembersCount = useMemo(() => {
     return 1 + members.filter((m) => m.name.trim() && m.studentId.trim()).length;
   }, [members]);
 
-  // Max team capacity for this offering
-  const maxTeamMembers = selectedOffering?.max_team_capacity || teamSize || 5;
-  const isLessThanMax = filledMembersCount < maxTeamMembers;
+  // Max team capacity for this offering (e.g. 5)
+  const maxTeamMembers = selectedOffering?.max_team_capacity || 5;
+
+  // Available ONLY when chosen team size is less than max capacity (e.g. size 2, 3, or 4 when max is 5).
+  // When team size is 5 (max capacity), this is false: never shown, never enabling open requests!
+  const canOpenForMembers = teamSize < maxTeamMembers;
 
   // When selected offering changes, update default team size to max capacity and reset topic if disabled
   useEffect(() => {
     if (selectedOffering) {
       setTeamSize(selectedOffering.max_team_capacity || 5);
-      if (selectedOffering.topic_enabled === false) {
+      if (selectedOffering.topic_enabled !== true) {
         setTeamTopic("");
       }
     }
@@ -197,10 +200,17 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
     const seenIds = new Set<string>();
     seenIds.add(formattedLeaderId);
 
-    // Validate filled members
+    // Validate members
     const updatedMembers = [...members];
     for (let i = 0; i < members.length; i++) {
       const m = members[i];
+      if (teamSize === maxTeamMembers || !canOpenForMembers) {
+        if (!m.name.trim() || !m.studentId.trim()) {
+          setErrorMessage(`Please fill in all member details (Member #${i + 2}) for your ${teamSize}-member team.`);
+          return;
+        }
+      }
+
       if (m.name.trim() || m.studentId.trim()) {
         if (!m.name.trim()) {
           setErrorMessage(`Member #${i + 2} name is required.`);
@@ -246,13 +256,13 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
       const res = await registerTeamMultiStepAction({
         courseOfferingId: selectedOffering.id,
         teamName: teamName.trim() || undefined,
-        capacity: Number(maxTeamMembers),
-        topic: selectedOffering.topic_enabled !== false ? teamTopic.trim() || undefined : undefined,
+        capacity: canOpenForMembers && isOpenForMembers ? Number(maxTeamMembers) : Number(teamSize),
+        topic: selectedOffering.topic_enabled === true ? teamTopic.trim() || undefined : undefined,
         presentation_number: Number(presentationNumber),
         leaderName: leaderName.trim(),
         leaderStudentId: formattedLeaderId,
         members: activeMembers,
-        isOpenForMembers: isLessThanMax ? isOpenForMembers : false,
+        isOpenForMembers: canOpenForMembers ? isOpenForMembers : false,
       });
 
       if (!res.success || !res.data) {
@@ -580,42 +590,26 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                 </p>
               </div>
 
-              {/* Team Topic */}
-              <div className="space-y-1.5">
-                <Label htmlFor="topic" className="text-xs font-semibold text-slate-700">
-                  Team Topic
-                </Label>
-                {selectedOffering?.topic_enabled !== false ? (
-                  <>
-                    <Input
-                      id="topic"
-                      type="text"
-                      placeholder="e.g. Dynamic Programming in Network Routing"
-                      value={teamTopic}
-                      onChange={(e) => setTeamTopic(e.target.value)}
-                      maxLength={120}
-                      className="text-xs"
-                    />
-                    <p className="text-[11px] text-diu-slate">
-                      Enter the presentation topic agreed with your course instructor.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <Input
-                      id="topic"
-                      type="text"
-                      disabled
-                      value=""
-                      placeholder="Topic selection is disabled for this subject"
-                      className="text-xs bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200 select-none"
-                    />
-                    <p className="text-[11px] text-slate-500 font-medium">
-                      Topic input is turned off for this subject by the course instructor / Superadmin.
-                    </p>
-                  </>
-                )}
-              </div>
+              {/* Team Topic: ONLY visible if superadmin explicitly enabled presentation topic input */}
+              {selectedOffering?.topic_enabled === true && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="topic" className="text-xs font-semibold text-slate-700">
+                    Team Topic
+                  </Label>
+                  <Input
+                    id="topic"
+                    type="text"
+                    placeholder="e.g. Dynamic Programming in Network Routing"
+                    value={teamTopic}
+                    onChange={(e) => setTeamTopic(e.target.value)}
+                    maxLength={120}
+                    className="text-xs"
+                  />
+                  <p className="text-[11px] text-diu-slate">
+                    Enter the presentation topic agreed with your course instructor.
+                  </p>
+                </div>
+              )}
             </CardContent>
 
             <CardFooter className="flex justify-between items-center border-t border-slate-100 bg-slate-50/40 pt-4">
@@ -703,7 +697,9 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                     Team Members ({members.length} slot{members.length > 1 ? "s" : ""} for {teamSize} total capacity)
                   </h3>
                   <span className="text-[11px] text-diu-slate">
-                    Remaining slots can be left blank for users to request join later
+                    {canOpenForMembers
+                      ? "Enter your team members. You can optionally open remaining slots for other students to join."
+                      : `Enter details for all ${teamSize} team members.`}
                   </span>
                 </div>
 
@@ -715,7 +711,7 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                     >
                       <div className="space-y-1">
                         <Label className="text-[11px] text-slate-600 font-medium">
-                          Member #{idx + 2} Name
+                          Member #{idx + 2} Name *
                         </Label>
                         <Input
                           type="text"
@@ -723,12 +719,13 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                           value={mem.name}
                           onChange={(e) => updateMember(idx, "name", e.target.value)}
                           className="text-xs bg-white"
+                          required
                         />
                       </div>
 
                       <div className="space-y-1">
                         <Label className="text-[11px] text-slate-600 font-medium">
-                          Member #{idx + 2} ID
+                          Member #{idx + 2} ID *
                         </Label>
                         <Input
                           type="text"
@@ -741,6 +738,7 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                             }
                           }}
                           className="text-xs bg-white font-mono"
+                          required
                         />
                         {mem.studentId && !idRegex.test(formatStudentId(mem.studentId)) && (
                           <p className="text-[11px] text-red-600 font-medium mt-1">
@@ -752,8 +750,8 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                   ))}
                 </div>
 
-                {/* Enable/Disable Open for New Members Toggle Bar */}
-                {isLessThanMax && (
+                {/* Enable/Disable Open for New Members Toggle Bar (ONLY available when chosen team size < max capacity) */}
+                {canOpenForMembers && (
                   <div className="p-4 bg-emerald-50/70 border border-emerald-200/90 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm transition-all">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -772,10 +770,10 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-600 leading-relaxed">
-                        Your team currently has {maxTeamMembers - filledMembersCount} vacant slot{maxTeamMembers - filledMembersCount > 1 ? "s" : ""} (registered {filledMembersCount} of {maxTeamMembers} max capacity).
+                        Your team has {teamSize} members (maximum course capacity is {maxTeamMembers} members).
                         {isOpenForMembers
-                          ? " Other students can discover this team on the Course Directory and request to join."
-                          : " Team registration will be closed. Only the team leader can invite members later."}
+                          ? ` Your team will accept join requests for the remaining ${maxTeamMembers - teamSize} slot${maxTeamMembers - teamSize > 1 ? "s" : ""} on the Course Directory.`
+                          : ` Your team will be registered as a closed, private team of ${teamSize} members.`}
                       </p>
                     </div>
 
@@ -900,37 +898,35 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
 
                 <div className="grid grid-cols-2 gap-2 border-b border-slate-200 pb-2">
                   <div>
-                    <span className="text-slate-400 block text-[10px]">TEAM SIZE / VACANCY</span>
+                    <span className="text-slate-400 block text-[10px]">TEAM SIZE / CAPACITY</span>
                     <span className="font-semibold text-slate-800">
-                      {filledMembersCount} of {maxTeamMembers} Members Registered ({Math.max(0, maxTeamMembers - filledMembersCount)} Vacant)
+                      {teamSize} {canOpenForMembers && isOpenForMembers ? `of ${maxTeamMembers} Max Capacity (${maxTeamMembers - teamSize} Vacant)` : `Members`}
                     </span>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">JOIN STATUS</span>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${
-                      isLessThanMax
-                        ? isOpenForMembers
-                          ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
-                          : "bg-slate-200 text-slate-700 border border-slate-300"
+                      canOpenForMembers && isOpenForMembers
+                        ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                        : canOpenForMembers
+                        ? "bg-slate-200 text-slate-700 border border-slate-300"
                         : "bg-blue-100 text-diu-blue"
                     }`}>
-                      {isLessThanMax
-                        ? isOpenForMembers
-                          ? "Open (Accepting Join Requests)"
-                          : "Closed (Private)"
+                      {canOpenForMembers && isOpenForMembers
+                        ? "Open (Accepting Join Requests)"
+                        : canOpenForMembers
+                        ? "Closed (Private Team)"
                         : "Full Team"}
                     </span>
                   </div>
                 </div>
 
-                <div className="border-b border-slate-200 pb-2">
-                  <span className="text-slate-400 block text-[10px]">TOPIC</span>
-                  <span className="font-medium text-slate-800 italic">
-                    {selectedOffering?.topic_enabled !== false
-                      ? teamTopic || "No specific topic chosen"
-                      : "Topic input is turned off for this subject"}
-                  </span>
-                </div>
+                {selectedOffering?.topic_enabled === true && teamTopic && (
+                  <div className="border-b border-slate-200 pb-2">
+                    <span className="text-slate-400 block text-[10px]">TOPIC</span>
+                    <span className="font-medium text-slate-800 italic">{teamTopic}</span>
+                  </div>
+                )}
 
                 <div>
                   <span className="text-slate-400 block text-[10px] mb-1.5 font-bold uppercase">

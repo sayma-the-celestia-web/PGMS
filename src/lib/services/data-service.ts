@@ -374,7 +374,7 @@ export class DataService {
       id: `off-${Date.now()}`,
       ...input,
       max_teams_limit: input.max_teams_limit ?? 20,
-      topic_enabled: input.topic_enabled ?? true,
+      topic_enabled: input.topic_enabled ?? false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -667,11 +667,11 @@ export class DataService {
       // If all slots are already filled, team is FULL.
       // If there are open slots (e.g. capacity is 5, registered with 2, 3, or 4 members):
       // Respect payload.isOpenForMembers toggle! If true -> "OPEN", if false -> "CLOSED".
-      let initialStatus: "OPEN" | "FULL" | "CLOSED" = "OPEN";
+      let initialStatus: "OPEN" | "FULL" | "CLOSED" = "FULL";
       if (totalInitialCount >= payload.capacity) {
         initialStatus = "FULL";
       } else {
-        initialStatus = payload.isOpenForMembers === false ? "CLOSED" : "OPEN";
+        initialStatus = payload.isOpenForMembers === true ? "OPEN" : "CLOSED";
       }
 
       const newTeam: Team = {

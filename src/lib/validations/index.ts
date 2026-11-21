@@ -127,7 +127,7 @@ export const courseOfferingBaseSchema = z.object({
   min_team_capacity: z.coerce.number().int().min(1, "Min capacity must be at least 1"),
   max_team_capacity: z.coerce.number().int().min(1, "Max capacity must be at least 1"),
   max_teams_limit: z.coerce.number().int().min(1, "Max teams limit must be at least 1").default(20),
-  topic_enabled: z.boolean().default(true),
+  topic_enabled: z.boolean().default(false),
 });
 
 export const courseOfferingFormSchema = courseOfferingBaseSchema.refine(

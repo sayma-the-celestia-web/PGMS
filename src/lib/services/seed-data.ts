@@ -64,7 +64,7 @@ export const initialOfferings: CourseOffering[] = [
     min_team_capacity: 2,
     max_team_capacity: 5,
     max_teams_limit: 20,
-    topic_enabled: true,
+    topic_enabled: false,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
