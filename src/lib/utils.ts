@@ -30,6 +30,23 @@ export function formatDateOnly(dateString: string | Date | null | undefined): st
   }).format(date);
 }
 
+/**
+ * Formats a Date or ISO string into a local 'YYYY-MM-DDTHH:mm' string
+ * suitable for <input type="datetime-local" /> in the user's browser local timezone.
+ */
+export function toLocalDateTimeString(dateInput: string | Date | null | undefined): string {
+  if (!dateInput) return "";
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const MM = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mm = pad(d.getMinutes());
+  return `${yyyy}-${MM}-${dd}T${hh}:${mm}`;
+}
+
 export function normalizeStudentId(id: string): string {
   return id.trim().toLowerCase().replace(/\s+/g, "");
 }

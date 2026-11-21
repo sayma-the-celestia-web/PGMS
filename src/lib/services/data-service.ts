@@ -399,6 +399,26 @@ export class DataService {
   ): Promise<CourseOffering | null> {
     const offering = db.offerings.find((o) => o.id === id);
     if (!offering) return null;
+
+    if (updates.section) {
+      const trimmedSec = updates.section.trim();
+      const duplicate = db.offerings.some(
+        (o) =>
+          o.id !== id &&
+          o.course_id === offering.course_id &&
+          o.semester_id === offering.semester_id &&
+          o.section.toLowerCase() === trimmedSec.toLowerCase()
+      );
+      if (duplicate) {
+        throw new Error(
+          `Section "${trimmedSec}" already exists for this course and semester.`
+        );
+      }
+      updates.section = trimmedSec;
+    }
+
+    // Updating offering configuration strictly applies to future registrations.
+    // Existing registered teams, active memberships, and presentation slots remain fully preserved.
     Object.assign(offering, updates, { updated_at: new Date().toISOString() });
     db.saveToDisk();
     await this.logAuditEvent({
@@ -501,8 +521,15 @@ export class DataService {
     takenByTeam?: string;
   }[]> {
     const offering = db.offerings.find((o) => o.id === offeringId);
-    const limit = Number(offering?.max_teams_limit) > 0 ? Number(offering?.max_teams_limit) : 20;
+    const configuredLimit = Number(offering?.max_teams_limit) > 0 ? Number(offering?.max_teams_limit) : 20;
     const existingTeams = db.teams.filter((t) => t.course_offering_id === offeringId);
+    // Ensure limit is at least as large as the highest presentation number of existing registered teams
+    // so editing an offering's slot limit never cuts off or orphans already registered teams
+    const maxExistingSlot = existingTeams.reduce(
+      (max, t) => Math.max(max, t.presentation_number || 0),
+      0
+    );
+    const limit = Math.max(configuredLimit, maxExistingSlot);
 
     const result = [];
     for (let i = 1; i <= limit; i++) {
@@ -1407,7 +1434,7 @@ export class DataService {
       team.team_name = newName;
     }
 
-    if (updates.capacity !== undefined) {
+    if (updates.capacity !== undefined && updates.capacity !== team.capacity) {
       if (
         updates.capacity < offering.min_team_capacity ||
         updates.capacity > offering.max_team_capacity

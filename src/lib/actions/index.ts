@@ -232,8 +232,19 @@ export async function createCourseOfferingAction(data: any) {
 export async function updateCourseOfferingAction(id: string, data: any) {
   try {
     const validated = courseOfferingBaseSchema.partial().parse(data);
+    if (
+      validated.min_team_capacity !== undefined &&
+      validated.max_team_capacity !== undefined &&
+      validated.max_team_capacity < validated.min_team_capacity
+    ) {
+      return {
+        success: false,
+        error: "Max capacity must be greater than or equal to min capacity.",
+      };
+    }
     const result = await DataService.updateCourseOffering(id, validated);
     revalidatePath("/superadmin/registrations");
+    revalidatePath("/superadmin/teams");
     revalidatePath("/courses");
     revalidatePath("/register-team");
     return { success: true, data: result };

@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RegistrationStatusBadge } from "@/components/ui/status-badge";
-import { formatDate } from "@/lib/utils";
-import { PlusCircle, Layers, AlertTriangle, Clock, ArrowRight } from "lucide-react";
+import { formatDate, toLocalDateTimeString } from "@/lib/utils";
+import { PlusCircle, Layers, AlertTriangle, Clock, ArrowRight, ShieldCheck } from "lucide-react";
 
 interface Props {
   initialOfferings: CourseOffering[];
@@ -35,8 +35,8 @@ export function RegistrationsClient({
   const [maxCap, setMaxCap] = useState(5);
   const [maxTeamsLimit, setMaxTeamsLimit] = useState(20);
   const [topicEnabled, setTopicEnabled] = useState(false);
-  const [deadline, setDeadline] = useState(
-    new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 16)
+  const [deadline, setDeadline] = useState(() =>
+    toLocalDateTimeString(new Date(Date.now() + 14 * 86400000))
   );
 
   const [loading, setLoading] = useState(false);
@@ -52,6 +52,24 @@ export function RegistrationsClient({
       setError("Please create a semester first under the Semesters tab before adding an offering.");
       return;
     }
+    if (!section.trim()) {
+      setError("Section code is required.");
+      return;
+    }
+    if (Number(maxCap) < Number(minCap)) {
+      setError("Max capacity must be greater than or equal to min capacity.");
+      return;
+    }
+    if (!deadline || !deadline.trim()) {
+      setError("Registration deadline is required.");
+      return;
+    }
+    const deadlineDate = new Date(deadline);
+    if (isNaN(deadlineDate.getTime())) {
+      setError("Please provide a valid registration deadline date and time.");
+      return;
+    }
+
     setError(null);
     setLoading(true);
 
@@ -59,10 +77,10 @@ export function RegistrationsClient({
       const res = await createCourseOfferingAction({
         course_id: courseId,
         semester_id: semesterId,
-        section,
+        section: section.trim(),
         registration_status: status,
         registration_start: new Date().toISOString(),
-        registration_deadline: new Date(deadline).toISOString(),
+        registration_deadline: deadlineDate.toISOString(),
         min_team_capacity: Number(minCap),
         max_team_capacity: Number(maxCap),
         max_teams_limit: Number(maxTeamsLimit),
@@ -138,9 +156,9 @@ export function RegistrationsClient({
     setEditMaxTeamsLimit(off.max_teams_limit || 20);
     setEditTopicEnabled(off.topic_enabled !== false);
     setEditDeadline(
-      off.registration_deadline
-        ? new Date(off.registration_deadline).toISOString().slice(0, 16)
-        : new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 16)
+      toLocalDateTimeString(
+        off.registration_deadline || new Date(Date.now() + 14 * 86400000)
+      )
     );
     setEditError(null);
   };
@@ -148,14 +166,33 @@ export function RegistrationsClient({
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingOffering) return;
+
+    if (!editSection.trim()) {
+      setEditError("Section code is required.");
+      return;
+    }
+    if (Number(editMaxCap) < Number(editMinCap)) {
+      setEditError("Max Capacity must be greater than or equal to Min Capacity.");
+      return;
+    }
+    if (!editDeadline || !editDeadline.trim()) {
+      setEditError("Registration deadline is required.");
+      return;
+    }
+    const deadlineDate = new Date(editDeadline);
+    if (isNaN(deadlineDate.getTime())) {
+      setEditError("Please enter a valid registration deadline date and time.");
+      return;
+    }
+
     setEditLoading(true);
     setEditError(null);
 
     try {
       const res = await updateCourseOfferingAction(editingOffering.id, {
-        section: editSection,
+        section: editSection.trim(),
         registration_status: editStatus,
-        registration_deadline: new Date(editDeadline).toISOString(),
+        registration_deadline: deadlineDate.toISOString(),
         min_team_capacity: Number(editMinCap),
         max_team_capacity: Number(editMaxCap),
         max_teams_limit: Number(editMaxTeamsLimit),
@@ -321,6 +358,9 @@ export function RegistrationsClient({
                     onChange={(e) => setDeadline(e.target.value)}
                     required
                   />
+                  <p className="text-[11px] text-slate-500">
+                    Local browser time.
+                  </p>
                 </div>
               </div>
 
@@ -401,6 +441,17 @@ export function RegistrationsClient({
           </CardHeader>
           <form onSubmit={handleEditSubmit}>
             <CardContent className="pt-4 space-y-4">
+              {/* Preserved Registered Teams Notice */}
+              <div className="p-3 rounded-lg bg-blue-50/70 border border-blue-200 text-xs text-diu-navy flex items-start gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-diu-blue shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <span className="font-bold block text-diu-navy">Existing Registered Teams Are Protected</span>
+                  <p className="text-slate-600 text-[11px] leading-relaxed">
+                    Changes to capacity bounds, topic settings, or deadline only govern future team registrations and open join slots. All existing registered teams ({editingOffering.teams_count || 0} team{editingOffering.teams_count === 1 ? "" : "s"}, {editingOffering.students_count || 0} student{editingOffering.students_count === 1 ? "" : "s"}) remain completely intact and active.
+                  </p>
+                </div>
+              </div>
+
               {editError && (
                 <div className="p-3 rounded bg-red-50 text-red-700 text-xs flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4" />
@@ -477,6 +528,9 @@ export function RegistrationsClient({
                     onChange={(e) => setEditDeadline(e.target.value)}
                     required
                   />
+                  <p className="text-[11px] text-slate-500">
+                    Local browser time. Preserved accurately without timezone drift.
+                  </p>
                 </div>
               </div>
 
