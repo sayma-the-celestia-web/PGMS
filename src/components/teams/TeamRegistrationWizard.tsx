@@ -64,7 +64,7 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
   // Step 1: Presentation Details
   const [teamName, setTeamName] = useState("");
   const [teamSize, setTeamSize] = useState<number>(
-    selectedOffering?.min_team_capacity || 3
+    selectedOffering?.max_team_capacity || 5
   );
   const [teamTopic, setTeamTopic] = useState("");
 
@@ -90,25 +90,25 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
   // Pattern strictly checking 252-35-242
   const idRegex = /^\d{3}-\d{2}-\d{3}$/;
 
-  // Open for new members toggle (when registering with fewer members than team size)
+  // Open for new members toggle (when registering with fewer members than max team capacity)
   const [isOpenForMembers, setIsOpenForMembers] = useState(true);
 
   // Compute filled members count
   const filledMembersCount = useMemo(() => {
-    return 1 + members.filter((m) => m.name.trim() || m.studentId.trim()).length;
+    return 1 + members.filter((m) => m.name.trim() && m.studentId.trim()).length;
   }, [members]);
-  const hasVacantSlots = filledMembersCount < teamSize;
 
-  // When selected offering changes, update default team size bounds
+  // Max team capacity for this offering
+  const maxTeamMembers = selectedOffering?.max_team_capacity || teamSize || 5;
+  const isLessThanMax = filledMembersCount < maxTeamMembers;
+
+  // When selected offering changes, update default team size to max capacity and reset topic if disabled
   useEffect(() => {
     if (selectedOffering) {
-      setTeamSize((prev) => {
-        const min = selectedOffering.min_team_capacity || 2;
-        const max = selectedOffering.max_team_capacity || 5;
-        if (prev < min) return min;
-        if (prev > max) return max;
-        return prev;
-      });
+      setTeamSize(selectedOffering.max_team_capacity || 5);
+      if (selectedOffering.topic_enabled === false) {
+        setTeamTopic("");
+      }
     }
   }, [selectedOffering]);
 
@@ -246,13 +246,13 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
       const res = await registerTeamMultiStepAction({
         courseOfferingId: selectedOffering.id,
         teamName: teamName.trim() || undefined,
-        capacity: Number(teamSize),
-        topic: teamTopic.trim() || undefined,
+        capacity: Number(maxTeamMembers),
+        topic: selectedOffering.topic_enabled !== false ? teamTopic.trim() || undefined : undefined,
         presentation_number: Number(presentationNumber),
         leaderName: leaderName.trim(),
         leaderStudentId: formattedLeaderId,
         members: activeMembers,
-        isOpenForMembers: hasVacantSlots ? isOpenForMembers : false,
+        isOpenForMembers: isLessThanMax ? isOpenForMembers : false,
       });
 
       if (!res.success || !res.data) {
@@ -585,7 +585,7 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                 <Label htmlFor="topic" className="text-xs font-semibold text-slate-700">
                   Team Topic
                 </Label>
-                {selectedOffering?.topic_enabled ? (
+                {selectedOffering?.topic_enabled !== false ? (
                   <>
                     <Input
                       id="topic"
@@ -601,9 +601,19 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                     </p>
                   </>
                 ) : (
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-500">
-                    Topic selection is disabled for this subject by the Superadmin/Instructor.
-                  </div>
+                  <>
+                    <Input
+                      id="topic"
+                      type="text"
+                      disabled
+                      value=""
+                      placeholder="Topic selection is disabled for this subject"
+                      className="text-xs bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200 select-none"
+                    />
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      Topic input is turned off for this subject by the course instructor / Superadmin.
+                    </p>
+                  </>
                 )}
               </div>
             </CardContent>
@@ -743,7 +753,7 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                 </div>
 
                 {/* Enable/Disable Open for New Members Toggle Bar */}
-                {hasVacantSlots && (
+                {isLessThanMax && (
                   <div className="p-4 bg-emerald-50/70 border border-emerald-200/90 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm transition-all">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -762,7 +772,7 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-600 leading-relaxed">
-                        Your team currently has {teamSize - filledMembersCount} vacant slot{teamSize - filledMembersCount > 1 ? "s" : ""} (registered {filledMembersCount} of {teamSize} total capacity).
+                        Your team currently has {maxTeamMembers - filledMembersCount} vacant slot{maxTeamMembers - filledMembersCount > 1 ? "s" : ""} (registered {filledMembersCount} of {maxTeamMembers} max capacity).
                         {isOpenForMembers
                           ? " Other students can discover this team on the Course Directory and request to join."
                           : " Team registration will be closed. Only the team leader can invite members later."}
@@ -892,19 +902,19 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                   <div>
                     <span className="text-slate-400 block text-[10px]">TEAM SIZE / VACANCY</span>
                     <span className="font-semibold text-slate-800">
-                      {filledMembersCount} of {teamSize} Members Registered ({teamSize - filledMembersCount} Vacant)
+                      {filledMembersCount} of {maxTeamMembers} Members Registered ({Math.max(0, maxTeamMembers - filledMembersCount)} Vacant)
                     </span>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px]">JOIN STATUS</span>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold ${
-                      hasVacantSlots
+                      isLessThanMax
                         ? isOpenForMembers
                           ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
                           : "bg-slate-200 text-slate-700 border border-slate-300"
                         : "bg-blue-100 text-diu-blue"
                     }`}>
-                      {hasVacantSlots
+                      {isLessThanMax
                         ? isOpenForMembers
                           ? "Open (Accepting Join Requests)"
                           : "Closed (Private)"
@@ -913,12 +923,14 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                   </div>
                 </div>
 
-                {teamTopic && (
-                  <div className="border-b border-slate-200 pb-2">
-                    <span className="text-slate-400 block text-[10px]">TOPIC</span>
-                    <span className="font-medium text-slate-800 italic">{teamTopic}</span>
-                  </div>
-                )}
+                <div className="border-b border-slate-200 pb-2">
+                  <span className="text-slate-400 block text-[10px]">TOPIC</span>
+                  <span className="font-medium text-slate-800 italic">
+                    {selectedOffering?.topic_enabled !== false
+                      ? teamTopic || "No specific topic chosen"
+                      : "Topic input is turned off for this subject"}
+                  </span>
+                </div>
 
                 <div>
                   <span className="text-slate-400 block text-[10px] mb-1.5 font-bold uppercase">

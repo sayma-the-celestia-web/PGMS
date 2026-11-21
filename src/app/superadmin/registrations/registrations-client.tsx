@@ -99,6 +99,85 @@ export function RegistrationsClient({
     }
   };
 
+  // Instant toggle for Team Topic Requirement
+  const handleTopicToggle = async (offeringId: string, currentEnabled: boolean) => {
+    try {
+      const res = await updateCourseOfferingAction(offeringId, {
+        topic_enabled: !currentEnabled,
+      });
+      if (res.success && res.data) {
+        setOfferings((prev) =>
+          prev.map((o) =>
+            o.id === offeringId ? { ...o, topic_enabled: !currentEnabled } : o
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Failed to toggle topic requirement:", err);
+    }
+  };
+
+  // Edit Offering Modal States
+  const [editingOffering, setEditingOffering] = useState<CourseOffering | null>(null);
+  const [editSection, setEditSection] = useState("");
+  const [editStatus, setEditStatus] = useState<RegistrationStatus>("OPEN");
+  const [editMinCap, setEditMinCap] = useState(2);
+  const [editMaxCap, setEditMaxCap] = useState(5);
+  const [editMaxTeamsLimit, setEditMaxTeamsLimit] = useState(20);
+  const [editTopicEnabled, setEditTopicEnabled] = useState(true);
+  const [editDeadline, setEditDeadline] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const openEditModal = (off: CourseOffering) => {
+    setEditingOffering(off);
+    setEditSection(off.section);
+    setEditStatus(off.registration_status);
+    setEditMinCap(off.min_team_capacity);
+    setEditMaxCap(off.max_team_capacity);
+    setEditMaxTeamsLimit(off.max_teams_limit || 20);
+    setEditTopicEnabled(off.topic_enabled !== false);
+    setEditDeadline(
+      off.registration_deadline
+        ? new Date(off.registration_deadline).toISOString().slice(0, 16)
+        : new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 16)
+    );
+    setEditError(null);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOffering) return;
+    setEditLoading(true);
+    setEditError(null);
+
+    try {
+      const res = await updateCourseOfferingAction(editingOffering.id, {
+        section: editSection,
+        registration_status: editStatus,
+        registration_deadline: new Date(editDeadline).toISOString(),
+        min_team_capacity: Number(editMinCap),
+        max_team_capacity: Number(editMaxCap),
+        max_teams_limit: Number(editMaxTeamsLimit),
+        topic_enabled: editTopicEnabled,
+      });
+
+      if (!res.success || !res.data) {
+        setEditError(res.error || "Failed to update offering");
+      } else {
+        const updated = res.data;
+        setOfferings((prev) =>
+          prev.map((o) => (o.id === editingOffering.id ? updated : o))
+        );
+        setEditingOffering(null);
+      }
+    } catch (err: any) {
+      setEditError(err?.message || "Failed to update offering");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -299,6 +378,159 @@ export function RegistrationsClient({
         </Card>
       )}
 
+      {/* EDIT OFFERING MODAL */}
+      {editingOffering && (
+        <Card className="border-2 border-diu-blue/40 shadow-lg bg-white">
+          <CardHeader className="bg-blue-50/50 pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-base text-diu-navy font-heading">
+                Edit Section Offering — {editingOffering.course?.code} Sec {editingOffering.section}
+              </CardTitle>
+              <p className="text-xs text-diu-slate mt-0.5">
+                Update section capacity, presentation topic requirement, and deadlines.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditingOffering(null)}
+              className="text-xs h-8 text-slate-500"
+            >
+              Close
+            </Button>
+          </CardHeader>
+          <form onSubmit={handleEditSubmit}>
+            <CardContent className="pt-4 space-y-4">
+              {editError && (
+                <div className="p-3 rounded bg-red-50 text-red-700 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>{editError}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="editSec" className="text-xs font-semibold">
+                    Section Code *
+                  </Label>
+                  <Input
+                    id="editSec"
+                    value={editSection}
+                    onChange={(e) => setEditSection(e.target.value)}
+                    required
+                    placeholder="e.g. H, 61_A"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Registration Status</Label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as RegistrationStatus)}
+                    className="w-full h-10 px-3 py-2 bg-white border border-slate-300 rounded-md text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-diu-blue"
+                  >
+                    <option value="OPEN">OPEN</option>
+                    <option value="PAUSED">PAUSED</option>
+                    <option value="UPCOMING">UPCOMING</option>
+                    <option value="CLOSED">CLOSED</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="editMinC" className="text-xs font-semibold">
+                    Min Capacity *
+                  </Label>
+                  <Input
+                    id="editMinC"
+                    type="number"
+                    min={1}
+                    value={editMinCap}
+                    onChange={(e) => setEditMinCap(Number(e.target.value))}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="editMaxC" className="text-xs font-semibold">
+                    Max Capacity *
+                  </Label>
+                  <Input
+                    id="editMaxC"
+                    type="number"
+                    min={1}
+                    value={editMaxCap}
+                    onChange={(e) => setEditMaxCap(Number(e.target.value))}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="editDeadline" className="text-xs font-semibold">
+                    Registration Deadline *
+                  </Label>
+                  <Input
+                    id="editDeadline"
+                    type="datetime-local"
+                    value={editDeadline}
+                    onChange={(e) => setEditDeadline(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 pt-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="editMaxTeams" className="text-xs font-semibold">
+                    Max Allowed Presentation Teams (Slots Limit) *
+                  </Label>
+                  <Input
+                    id="editMaxTeams"
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={editMaxTeamsLimit}
+                    onChange={(e) => setEditMaxTeamsLimit(Number(e.target.value))}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5 flex flex-col justify-center p-3 rounded-lg bg-blue-50/50 border border-blue-200">
+                  <Label className="text-xs font-bold text-diu-navy">Team Topic Requirement</Label>
+                  <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer pt-1">
+                    <input
+                      type="checkbox"
+                      checked={editTopicEnabled}
+                      onChange={(e) => setEditTopicEnabled(e.target.checked)}
+                      className="rounded border-slate-300 text-diu-blue focus:ring-diu-blue h-4 w-4"
+                    />
+                    <span className="font-medium">Enable presentation topic input for students</span>
+                  </label>
+                  <p className="text-[11px] text-slate-500">
+                    If disabled, topic input will be turned off for this subject.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditingOffering(null)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={editLoading} size="sm" className="bg-diu-blue hover:bg-diu-navy">
+                  {editLoading ? "Saving Changes..." : "Save Changes"}
+                </Button>
+              </div>
+            </CardContent>
+          </form>
+        </Card>
+      )}
+
       {/* OFFERINGS LIST */}
       <Card className="border border-slate-200 shadow-sm bg-white overflow-hidden">
         <div className="overflow-x-auto">
@@ -327,12 +559,29 @@ export function RegistrationsClient({
                     </span>
                     <span className="text-diu-blue font-bold">Sec {off.section}</span>
                   </td>
-                  <td className="p-3.5 text-slate-600 space-y-0.5">
+                  <td className="p-3.5 text-slate-600 space-y-1">
                     <span className="block font-medium">{off.min_team_capacity} – {off.max_team_capacity} members</span>
                     <span className="text-[11px] text-diu-blue font-semibold block">Max {off.max_teams_limit || 20} teams</span>
-                    <span className={`inline-block text-[10px] px-1.5 py-0.5 rounded font-medium ${off.topic_enabled !== false ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-500"}`}>
-                      Topic: {off.topic_enabled !== false ? "Enabled" : "Disabled"}
-                    </span>
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => handleTopicToggle(off.id, off.topic_enabled !== false)}
+                        className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border transition-all cursor-pointer ${
+                          off.topic_enabled !== false
+                            ? "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100"
+                            : "bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200"
+                        }`}
+                        title="Click to toggle Team Topic Requirement"
+                      >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${
+                            off.topic_enabled !== false ? "bg-emerald-600" : "bg-slate-400"
+                          }`}
+                        />
+                        <span>Topic: {off.topic_enabled !== false ? "Enabled" : "Disabled"}</span>
+                        <span className="text-[9px] text-slate-400 font-normal underline">toggle</span>
+                      </button>
+                    </div>
                   </td>
                   <td className="p-3.5 text-slate-600">
                     <Link
@@ -350,7 +599,16 @@ export function RegistrationsClient({
                   <td className="p-3.5">
                     <RegistrationStatusBadge status={off.registration_status} />
                   </td>
-                  <td className="p-3.5 text-right">
+                  <td className="p-3.5 text-right space-x-2 whitespace-nowrap">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditModal(off)}
+                      className="h-8 text-xs font-medium"
+                    >
+                      Edit
+                    </Button>
                     <select
                       aria-label={`Change status for ${off.course?.code || "course"} section ${off.section}`}
                       value={off.registration_status}

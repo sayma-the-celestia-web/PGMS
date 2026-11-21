@@ -228,6 +228,7 @@ export class DataService {
       updated_at: new Date().toISOString(),
     };
     db.courses.push(newCourse);
+    db.saveToDisk();
     await this.logAuditEvent({
       action: "CREATE_COURSE",
       targetType: "COURSE",
@@ -244,6 +245,7 @@ export class DataService {
     const course = db.courses.find((c) => c.id === id);
     if (!course) return null;
     Object.assign(course, updates, { updated_at: new Date().toISOString() });
+    db.saveToDisk();
     await this.logAuditEvent({
       action: "UPDATE_COURSE",
       targetType: "COURSE",
@@ -265,6 +267,7 @@ export class DataService {
     db.teams = db.teams.filter((t) => !offeringIds.includes(t.course_offering_id));
     db.offerings = db.offerings.filter((o) => o.course_id !== id);
     db.courses.splice(courseIdx, 1);
+    db.saveToDisk();
 
     await this.logAuditEvent({
       action: "DELETE_COURSE",
@@ -376,6 +379,7 @@ export class DataService {
       updated_at: new Date().toISOString(),
     };
     db.offerings.push(newOffering);
+    db.saveToDisk();
     await this.logAuditEvent({
       action: "CREATE_COURSE_OFFERING",
       targetType: "COURSE_OFFERING",
@@ -396,6 +400,7 @@ export class DataService {
     const offering = db.offerings.find((o) => o.id === id);
     if (!offering) return null;
     Object.assign(offering, updates, { updated_at: new Date().toISOString() });
+    db.saveToDisk();
     await this.logAuditEvent({
       action: "UPDATE_COURSE_OFFERING",
       targetType: "COURSE_OFFERING",

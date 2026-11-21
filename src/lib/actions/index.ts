@@ -218,6 +218,7 @@ export async function createCourseOfferingAction(data: any) {
     const result = await DataService.createCourseOffering(validated);
     revalidatePath("/superadmin/registrations");
     revalidatePath("/courses");
+    revalidatePath("/register-team");
     return { success: true, data: result };
   } catch (error: any) {
     if (error?.errors && Array.isArray(error.errors)) {
@@ -234,6 +235,7 @@ export async function updateCourseOfferingAction(id: string, data: any) {
     const result = await DataService.updateCourseOffering(id, validated);
     revalidatePath("/superadmin/registrations");
     revalidatePath("/courses");
+    revalidatePath("/register-team");
     return { success: true, data: result };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to update offering" };
