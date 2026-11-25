@@ -52,8 +52,9 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
   // Determine which section offering to display
   let currentOffering = allOfferings[0];
   if (resolvedSearchParams.section) {
+    const rawSection = resolvedSearchParams.section.replace(/\/+$/, "").trim().toLowerCase();
     const match = allOfferings.find(
-      (o) => o.section.toLowerCase() === resolvedSearchParams.section?.toLowerCase()
+      (o) => o.section.toLowerCase() === rawSection
     );
     if (match) currentOffering = match;
   }

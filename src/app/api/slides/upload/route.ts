@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { uploadSlideToCloudinary, MAX_SLIDE_FILE_SIZE_BYTES, ALLOWED_SLIDE_EXTENSIONS } from "@/lib/cloudinary";
 import { DataService } from "@/lib/services/data-service";
 import path from "path";
@@ -8,13 +9,14 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
-    const teamId = formData.get("teamId") as string | null;
+    const rawTeamId = formData.get("teamId") as string | null;
+    const teamId = rawTeamId && rawTeamId.trim() ? rawTeamId.trim() : undefined;
     const slideLink = (formData.get("slideLink") as string | null) || undefined;
     const file = formData.get("file") as File | null;
 
-    if (!teamId) {
+    if (!file && !slideLink && !teamId) {
       return NextResponse.json(
-        { success: false, error: "Team ID is required." },
+        { success: false, error: "A file or presentation link is required." },
         { status: 400 }
       );
     }
@@ -51,23 +53,38 @@ export async function POST(req: NextRequest) {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 
-      const uploadResult = await uploadSlideToCloudinary(buffer, file.name, teamId);
+      const uploadResult = await uploadSlideToCloudinary(buffer, file.name, teamId || `reg_${Date.now()}`);
       slideFileUrl = uploadResult.url;
       slideFileName = file.name;
     }
 
-    // Update team slides in DataService
-    const updatedTeam = await DataService.updateTeamSlides(teamId, {
-      slide_link: slideLink,
-      slide_file_name: slideFileName,
-      slide_file_url: slideFileUrl,
-    });
+    // If teamId is provided, update team in DataService (used by /manage)
+    let updatedTeam = undefined;
+    if (teamId) {
+      updatedTeam = await DataService.updateTeamSlides(teamId, {
+        slide_link: slideLink,
+        slide_file_name: slideFileName,
+        slide_file_url: slideFileUrl,
+      });
+
+      try {
+        revalidatePath("/slides");
+        revalidatePath(`/teams/${teamId}`);
+        revalidatePath("/manage");
+        if (updatedTeam.course_offering?.course?.slug) {
+          revalidatePath(`/slides/${updatedTeam.course_offering.course.slug}`);
+          revalidatePath(`/courses/${updatedTeam.course_offering.course.slug}`);
+        }
+      } catch (e) {
+        console.warn("Revalidation warning:", e);
+      }
+    }
 
     return NextResponse.json({
       success: true,
       team: updatedTeam,
-      fileUrl: slideFileUrl || updatedTeam.slide_file_url,
-      fileName: slideFileName || updatedTeam.slide_file_name,
+      fileUrl: slideFileUrl || updatedTeam?.slide_file_url,
+      fileName: slideFileName || updatedTeam?.slide_file_name,
     });
   } catch (error: any) {
     console.error("Slides upload error:", error);

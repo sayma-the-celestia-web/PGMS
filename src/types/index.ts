@@ -160,6 +160,9 @@ export interface MultiStepRegisterTeamPayload {
   leaderStudentId: string;
   members: MultiStepMemberItem[];
   isOpenForMembers?: boolean;
+  slide_file_name?: string | null;
+  slide_file_url?: string | null;
+  slide_link?: string | null;
 }
 
 export interface JoinTeamPayload {

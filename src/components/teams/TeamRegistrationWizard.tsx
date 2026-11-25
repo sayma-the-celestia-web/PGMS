@@ -35,6 +35,13 @@ import {
   UploadCloud,
   FileText,
   UserPlus,
+  Presentation,
+  X,
+  Link as LinkIcon,
+  Eye,
+  Download,
+  ExternalLink,
+  Loader2,
 } from "lucide-react";
 import { formatStudentId } from "@/lib/utils";
 
@@ -68,12 +75,18 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
   );
   const [teamTopic, setTeamTopic] = useState("");
 
-  // Step 2: Team Members
+  // Step 2: Team Members & Direct Slide Upload
   const [leaderName, setLeaderName] = useState("");
   const [leaderId, setLeaderId] = useState("");
   const [members, setMembers] = useState<MemberInput[]>([
     { name: "", studentId: "" },
   ]);
+  const [slideFile, setSlideFile] = useState<File | null>(null);
+  const [uploadedSlideUrl, setUploadedSlideUrl] = useState<string | null>(null);
+  const [uploadedSlideName, setUploadedSlideName] = useState<string | null>(null);
+  const [isUploadingSlide, setIsUploadingSlide] = useState(false);
+  const [slideLink, setSlideLink] = useState("");
+  const [uploadProgressText, setUploadProgressText] = useState<string | null>(null);
 
   // Step 3: Presentation Team Number Slots
   const [presentationNumber, setPresentationNumber] = useState<number>(1);
@@ -204,6 +217,71 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
     setStep(2);
   };
 
+  // Handle Slide File Selection (Direct Upload at Step 2)
+  const handleSlideFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setErrorMessage(null);
+    const file = e.target.files?.[0];
+    if (!file) {
+      setSlideFile(null);
+      setUploadedSlideUrl(null);
+      setUploadedSlideName(null);
+      return;
+    }
+
+    const maxBytes = 15 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      setErrorMessage(
+        `Slide file size (${sizeMb} MB) exceeds the 15 MB limit. Please select a PPTX or PDF under 15 MB.`
+      );
+      e.target.value = "";
+      setSlideFile(null);
+      setUploadedSlideUrl(null);
+      setUploadedSlideName(null);
+      return;
+    }
+
+    const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+    if (![".pdf", ".pptx", ".ppt"].includes(ext)) {
+      setErrorMessage(
+        `Invalid file format "${ext}". Only PowerPoint (.pptx) and PDF (.pdf) presentations are allowed.`
+      );
+      e.target.value = "";
+      setSlideFile(null);
+      setUploadedSlideUrl(null);
+      setUploadedSlideName(null);
+      return;
+    }
+
+    setSlideFile(file);
+    setIsUploadingSlide(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/slides/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.fileUrl) {
+        throw new Error(data.error || "Failed to upload presentation file to Cloudinary.");
+      }
+
+      setUploadedSlideUrl(data.fileUrl);
+      setUploadedSlideName(data.fileName || file.name);
+    } catch (uploadErr: any) {
+      setErrorMessage(uploadErr?.message || "Failed to upload presentation file to Cloudinary.");
+      setSlideFile(null);
+      setUploadedSlideUrl(null);
+      setUploadedSlideName(null);
+      e.target.value = "";
+    } finally {
+      setIsUploadingSlide(false);
+    }
+  };
+
   // Step 2 Validation
   const handleNextStep2 = (e: React.FormEvent) => {
     e.preventDefault();
@@ -272,6 +350,36 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
     setSubmitting(true);
 
     try {
+      let finalSlideUrl = uploadedSlideUrl;
+      let finalSlideName = uploadedSlideName;
+
+      // If slideFile was selected but upload hasn't finished yet, upload now
+      if (slideFile && !finalSlideUrl) {
+        setUploadProgressText("Uploading presentation file to Cloudinary...");
+        const formData = new FormData();
+        formData.append("file", slideFile);
+        if (slideLink.trim()) {
+          formData.append("slideLink", slideLink.trim());
+        }
+
+        const uploadRes = await fetch("/api/slides/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok || !uploadData.success || !uploadData.fileUrl) {
+          throw new Error(uploadData?.error || "Failed to upload presentation slides to Cloudinary.");
+        }
+
+        finalSlideUrl = uploadData.fileUrl;
+        finalSlideName = uploadData.fileName || slideFile.name;
+        setUploadedSlideUrl(finalSlideUrl);
+        setUploadedSlideName(finalSlideName);
+      }
+
+      setUploadProgressText("Creating team and recording memberships...");
+
       const formattedLeaderId = formatStudentId(leaderId);
       // Filter only members with name and ID filled
       const activeMembers = members
@@ -291,17 +399,22 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
         leaderStudentId: formattedLeaderId,
         members: activeMembers,
         isOpenForMembers: canOpenForMembers ? isOpenForMembers : false,
+        slide_link: slideLink.trim() || undefined,
+        slide_file_name: finalSlideName || undefined,
+        slide_file_url: finalSlideUrl || undefined,
       });
 
       if (!res.success || !res.data) {
         setErrorMessage(res.error || "Failed to register team.");
-      } else {
-        setResult(res.data);
+        return;
       }
+
+      setResult(res.data);
     } catch (err: any) {
       setErrorMessage(err?.message || "An unexpected error occurred.");
     } finally {
       setSubmitting(false);
+      setUploadProgressText(null);
     }
   };
 
@@ -380,6 +493,17 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                   </span>
                 </div>
               )}
+              {slideFile && (
+                <div className="flex justify-between items-center text-slate-600 border-t border-slate-100 pt-1.5">
+                  <span className="flex items-center gap-1.5 text-diu-navy font-semibold">
+                    <Presentation className="w-3.5 h-3.5 text-diu-blue" />
+                    Slides Uploaded:
+                  </span>
+                  <span className="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px] truncate max-w-[200px]">
+                    {slideFile.name} (Cloudinary)
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between items-center text-slate-600 border-t border-slate-100 pt-1.5">
                 <span>Capacity / Members:</span>
                 <span className="font-medium text-slate-800">
@@ -405,15 +529,24 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
             </div>
           </CardContent>
 
-          <CardFooter className="flex flex-col sm:flex-row gap-3 pt-2">
-            <Link href="/manage" className="w-full">
-              <Button className="w-full gap-2 font-semibold shadow-sm">
+          <CardFooter className="flex flex-col sm:flex-row gap-2.5 pt-2">
+            <Link href="/manage" className="flex-1">
+              <Button className="w-full gap-2 font-semibold shadow-sm text-xs">
                 <UploadCloud className="w-4 h-4" />
-                Go to Team Management / Upload Slides
+                Go to Team Management
               </Button>
             </Link>
-            <Link href="/courses" className="w-full sm:w-auto">
-              <Button variant="outline" className="w-full sm:w-auto text-xs">
+            <Link
+              href={`/slides/${selectedOffering.course?.slug || selectedOffering.course?.code?.toLowerCase() || "se214"}?section=${selectedOffering.section}`}
+              className="flex-1"
+            >
+              <Button variant="outline" className="w-full text-xs gap-1.5 border-diu-blue text-diu-blue hover:bg-blue-50">
+                <Eye className="w-3.5 h-3.5" />
+                View in Section Slides
+              </Button>
+            </Link>
+            <Link href="/courses" className="sm:w-auto">
+              <Button variant="ghost" className="w-full sm:w-auto text-xs text-slate-500">
                 Browse Courses
               </Button>
             </Link>
@@ -827,6 +960,99 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                     </div>
                   </div>
                 )}
+                {/* Presentation Slides Section (Direct PPTX / PDF Upload, max 15MB) */}
+                <div className="p-4 bg-blue-50/50 border border-blue-200/80 rounded-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Presentation className="w-4 h-4 text-diu-blue shrink-0" />
+                      <span className="text-xs font-bold text-diu-navy">
+                        Presentation Slides (Direct Upload) — Optional
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-diu-blue">
+                      Max 15 MB • PDF / PPTX
+                    </span>
+                  </div>
+
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    Directly upload your team&apos;s presentation slides (.pptx or .pdf). Files are stored in Cloudinary CDN and made viewable &amp; downloadable in the section slides repository. You can also upload or update it later from Team Login.
+                  </p>
+
+                  <div className="space-y-3 pt-1">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="regSlideFile" className="text-[11px] font-semibold text-slate-700 flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5 text-diu-blue" />
+                        Select Slide File (.pptx / .pdf)
+                      </Label>
+                      <input
+                        id="regSlideFile"
+                        type="file"
+                        accept=".pdf,.pptx,.ppt,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint"
+                        onChange={handleSlideFileChange}
+                        className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-diu-blue hover:file:bg-blue-100 cursor-pointer border border-slate-300 rounded-lg p-1 bg-white"
+                      />
+
+                      {isUploadingSlide ? (
+                        <div className="text-[11px] text-blue-800 bg-blue-50 p-2.5 rounded-lg border border-blue-200 flex items-center gap-2 mt-1.5 animate-pulse">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-diu-blue shrink-0" />
+                          <span className="font-semibold">Uploading {slideFile?.name} to Cloudinary CDN...</span>
+                        </div>
+                      ) : slideFile ? (
+                        <div className="text-[11px] text-slate-700 bg-emerald-50 p-2.5 rounded-lg border border-emerald-200 flex items-center justify-between mt-1.5 shadow-xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase shrink-0 ${
+                              slideFile.name.toLowerCase().endsWith(".pdf")
+                                ? "bg-rose-100 text-rose-700 border border-rose-200"
+                                : "bg-amber-100 text-amber-800 border border-amber-200"
+                            }`}>
+                              {slideFile.name.toLowerCase().endsWith(".pdf") ? "PDF" : "PPTX"}
+                            </span>
+                            <span className="font-semibold truncate text-xs">{slideFile.name}</span>
+                            <span className="text-slate-500 font-mono text-[10px] shrink-0">
+                              ({(slideFile.size / (1024 * 1024)).toFixed(2)} MB)
+                            </span>
+                            {uploadedSlideUrl && (
+                              <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300 shrink-0">
+                                ✓ Uploaded to Cloudinary
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSlideFile(null);
+                              setUploadedSlideUrl(null);
+                              setUploadedSlideName(null);
+                            }}
+                            className="text-slate-400 hover:text-rose-500 p-1 shrink-0 ml-2"
+                            title="Remove file"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-slate-400">
+                          Supports Microsoft PowerPoint (.pptx) or PDF (.pdf) up to 15 MB.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1 pt-1">
+                      <Label htmlFor="regSlideLink" className="text-[11px] font-semibold text-slate-700 flex items-center gap-1.5">
+                        <LinkIcon className="w-3.5 h-3.5 text-diu-blue" />
+                        Or Paste Presentation Link (Optional)
+                      </Label>
+                      <Input
+                        id="regSlideLink"
+                        type="url"
+                        placeholder="https://docs.google.com/presentation/d/..."
+                        value={slideLink}
+                        onChange={(e) => setSlideLink(e.target.value)}
+                        className="text-xs bg-white"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
 
@@ -956,6 +1182,29 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
                   </div>
                 )}
 
+                {(slideFile || slideLink) && (
+                  <div className="border-b border-slate-200 pb-2">
+                    <span className="text-slate-400 block text-[10px] font-bold uppercase">
+                      PRESENTATION SLIDES
+                    </span>
+                    {slideFile && (
+                      <div className="flex items-center gap-2 mt-1 text-slate-800 font-semibold">
+                        <Presentation className="w-3.5 h-3.5 text-diu-blue shrink-0" />
+                        <span className="truncate">{slideFile.name}</span>
+                        <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 shrink-0 font-normal">
+                          {(slideFile.size / (1024 * 1024)).toFixed(2)} MB • Cloudinary
+                        </span>
+                      </div>
+                    )}
+                    {slideLink && (
+                      <p className="text-[11px] text-diu-blue truncate mt-1 flex items-center gap-1 font-mono">
+                        <LinkIcon className="w-3 h-3 shrink-0" />
+                        <span>{slideLink}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <div>
                   <span className="text-slate-400 block text-[10px] mb-1.5 font-bold uppercase">
                     Team Members
@@ -1010,7 +1259,10 @@ export function TeamRegistrationWizard({ offerings, initialOfferingId }: Props) 
               className="w-full sm:w-auto gap-2 font-semibold text-xs shadow-sm bg-diu-blue hover:bg-diu-navy h-11 sm:h-8"
             >
               {submitting ? (
-                "Registering Team..."
+                <>
+                  <UploadCloud className="w-3.5 h-3.5 animate-pulse" />
+                  <span>{uploadProgressText || "Registering Team..."}</span>
+                </>
               ) : (
                 <>
                   <Check className="w-4 h-4" />

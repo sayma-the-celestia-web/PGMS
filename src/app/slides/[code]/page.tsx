@@ -79,6 +79,9 @@ export default async function CourseSlidesPage({ params, searchParams }: Props) 
     if (match) currentOffering = match;
   }
 
+  // Fetch all courses for top-level course switcher
+  const allCourses = await DataService.getCourses();
+
   // Fetch teams for this offering
   const teams = await DataService.getTeamsByOffering(currentOffering.id);
 
@@ -105,6 +108,7 @@ export default async function CourseSlidesPage({ params, searchParams }: Props) 
         {/* Client Component */}
         <SlidesViewClient
           course={course}
+          allCourses={allCourses}
           offerings={allOfferings}
           currentOffering={currentOffering}
           teams={teams}

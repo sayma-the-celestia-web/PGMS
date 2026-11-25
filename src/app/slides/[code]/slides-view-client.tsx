@@ -25,6 +25,7 @@ import {
 
 interface Props {
   course: Course;
+  allCourses?: Course[];
   offerings: CourseOffering[];
   currentOffering: CourseOffering;
   teams: Team[];
@@ -32,6 +33,7 @@ interface Props {
 
 export function SlidesViewClient({
   course,
+  allCourses = [],
   offerings,
   currentOffering,
   teams,
@@ -135,6 +137,36 @@ export function SlidesViewClient({
       {/* Top Banner */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="bg-gradient-to-r from-diu-navy via-slate-900 to-diu-blue p-6 sm:p-8 text-white relative">
+          {/* Course Switcher Tabs */}
+          {allCourses && allCourses.length > 0 && (
+            <div className="flex items-center gap-2 mb-6 pb-4 border-b border-white/15 overflow-x-auto">
+              <span className="text-xs text-blue-200 font-semibold uppercase tracking-wider shrink-0">Courses:</span>
+              <Link
+                href="/slides"
+                className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-blue-100 hover:bg-white/20 hover:text-white transition-all flex items-center gap-1.5 shrink-0"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                <span>All Courses</span>
+              </Link>
+              {allCourses.map((c) => {
+                const isCurrent = c.id === course.id || c.code.toLowerCase() === course.code.toLowerCase();
+                return (
+                  <Link
+                    key={c.id}
+                    href={`/slides/${c.slug || c.code.toLowerCase()}?section=H`}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold transition-all shrink-0 ${
+                      isCurrent
+                        ? "bg-diu-gold text-slate-900 shadow-sm font-bold"
+                        : "bg-white/10 text-blue-100 hover:bg-white/20 hover:text-white"
+                    }`}
+                  >
+                    {c.code}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
           <div className="flex flex-wrap justify-between items-start gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-2">

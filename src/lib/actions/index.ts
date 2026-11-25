@@ -368,6 +368,8 @@ export async function registerTeamMultiStepAction(payload: MultiStepRegisterTeam
     const result = await DataService.registerTeamMultiStep(validated);
     safeRevalidatePath("/courses");
     safeRevalidatePath(`/courses/${result.offeringSlug || ""}`);
+    safeRevalidatePath("/slides");
+    safeRevalidatePath(`/slides/${result.offeringSlug || ""}`);
     safeRevalidatePath("/superadmin/teams");
     safeRevalidatePath("/manage");
     return { success: true, data: result };
@@ -412,6 +414,11 @@ export async function updateTeamSlideAction(
     });
     safeRevalidatePath(`/teams/${teamId}`);
     safeRevalidatePath("/manage");
+    safeRevalidatePath("/slides");
+    if (updated.course_offering?.course?.slug) {
+      safeRevalidatePath(`/slides/${updated.course_offering.course.slug}`);
+      safeRevalidatePath(`/courses/${updated.course_offering.course.slug}`);
+    }
     return { success: true, team: updated };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to update slides" };
@@ -424,6 +431,11 @@ export async function updateTeamNameAction(teamId: string, teamName: string) {
     safeRevalidatePath("/courses");
     safeRevalidatePath(`/teams/${teamId}`);
     safeRevalidatePath("/manage");
+    safeRevalidatePath("/slides");
+    if (updated.course_offering?.course?.slug) {
+      safeRevalidatePath(`/slides/${updated.course_offering.course.slug}`);
+      safeRevalidatePath(`/courses/${updated.course_offering.course.slug}`);
+    }
     return { success: true, team: updated };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to update team name" };
@@ -436,6 +448,11 @@ export async function toggleTeamStatusAction(teamId: string, status: "OPEN" | "C
     safeRevalidatePath("/courses");
     safeRevalidatePath(`/teams/${teamId}`);
     safeRevalidatePath("/manage");
+    safeRevalidatePath("/slides");
+    if (updated.course_offering?.course?.slug) {
+      safeRevalidatePath(`/slides/${updated.course_offering.course.slug}`);
+      safeRevalidatePath(`/courses/${updated.course_offering.course.slug}`);
+    }
     return { success: true, team: updated };
   } catch (error: any) {
     return { success: false, error: error?.message || "Failed to toggle team status" };

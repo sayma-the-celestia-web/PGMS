@@ -43,6 +43,9 @@ export const multiStepRegisterTeamSchema = z.object({
     })
   ).default([]),
   isOpenForMembers: z.boolean().optional().default(true),
+  slide_file_name: z.string().trim().optional(),
+  slide_file_url: z.string().trim().optional(),
+  slide_link: z.string().trim().optional(),
 });
 
 export const leaderLoginSchema = z.object({

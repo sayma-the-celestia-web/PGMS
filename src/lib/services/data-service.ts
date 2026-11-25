@@ -501,7 +501,13 @@ export class DataService {
   }
 
   static async getCourseBySlug(slug: string): Promise<Course | null> {
-    return db.courses.find((c) => c.slug.toLowerCase() === slug.toLowerCase()) || null;
+    await this.syncFromCloud();
+    const clean = slug.toLowerCase().trim();
+    return (
+      db.courses.find(
+        (c) => c.slug.toLowerCase() === clean || c.code.toLowerCase() === clean
+      ) || null
+    );
   }
 
   static async createCourse(
@@ -645,12 +651,16 @@ export class DataService {
     });
 
     if (filters) {
+      if (filters.courseId && filters.courseId !== "all") {
+        list = list.filter((o) => o.course_id === filters.courseId);
+      }
       if (filters.semesterId && filters.semesterId !== "all") {
         list = list.filter((o) => o.semester_id === filters.semesterId);
       }
       if (filters.section && filters.section !== "all") {
+        const rawSection = filters.section.replace(/\/+$/, "").trim().toLowerCase();
         list = list.filter(
-          (o) => o.section.toLowerCase() === filters.section?.toLowerCase()
+          (o) => o.section.toLowerCase() === rawSection
         );
       }
       if (filters.status && filters.status !== "all") {
@@ -819,6 +829,13 @@ export class DataService {
   // -------------------------------------------------------------
   static async getTeamsByOffering(offeringId: string): Promise<Team[]> {
     await this.syncFromCloud();
+    const offering = db.offerings.find((o) => o.id === offeringId);
+    const course = offering ? db.courses.find((c) => c.id === offering.course_id) : undefined;
+    const semester = offering ? db.semesters.find((s) => s.id === offering.semester_id) : undefined;
+    const populatedOffering = offering
+      ? { ...offering, course, semester }
+      : undefined;
+
     const teams = db.teams.filter((t) => t.course_offering_id === offeringId);
     return teams.map((team) => {
       const activeMemberships = db.memberships
@@ -847,6 +864,7 @@ export class DataService {
 
       return {
         ...team,
+        course_offering: populatedOffering,
         memberships: activeMemberships,
         leader,
         registered_count,
@@ -1095,6 +1113,9 @@ export class DataService {
         team_name: finalTeamName,
         capacity: payload.capacity,
         topic: payload.topic?.trim() || null,
+        slide_link: payload.slide_link?.trim() || null,
+        slide_file_name: payload.slide_file_name?.trim() || null,
+        slide_file_url: payload.slide_file_url?.trim() || null,
         leader_membership_id: leaderMembershipId,
         status: initialStatus,
         created_at: new Date().toISOString(),
@@ -1208,6 +1229,9 @@ export class DataService {
               team_name: newTeam.team_name,
               capacity: newTeam.capacity,
               topic: newTeam.topic,
+              slide_link: newTeam.slide_link,
+              slide_file_name: newTeam.slide_file_name,
+              slide_file_url: newTeam.slide_file_url,
               leader_membership_id: null,
               status: newTeam.status,
               created_at: newTeam.created_at,
@@ -1477,6 +1501,7 @@ export class DataService {
     }
 
     db.saveToDisk();
+    await this.syncToCloud();
 
     return (await this.getTeamById(teamId, true))!;
   }
@@ -2314,6 +2339,13 @@ export class DataService {
     let list = teams.filter((t): t is Team => t !== null);
 
     if (filters) {
+      if (filters.courseId && filters.courseId !== "all") {
+        list = list.filter(
+          (t) =>
+            t.course_offering?.course_id === filters.courseId ||
+            t.course_offering?.course?.id === filters.courseId
+        );
+      }
       if (filters.offeringId && filters.offeringId !== "all") {
         list = list.filter((t) => t.course_offering_id === filters.offeringId);
       }

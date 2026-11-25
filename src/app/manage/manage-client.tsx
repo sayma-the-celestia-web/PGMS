@@ -306,6 +306,18 @@ export function ManageClient() {
           setTeam(data.team);
           setSlideFileName(data.fileName || data.team.slide_file_name || "");
           setSelectedFile(null);
+        } else if (data.fileUrl) {
+          setTeam((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  slide_file_url: data.fileUrl,
+                  slide_file_name: data.fileName || slideFileName,
+                }
+              : null
+          );
+          setSlideFileName(data.fileName || "");
+          setSelectedFile(null);
         }
         setActionSuccess("Presentation slides uploaded and stored in Cloudinary successfully!");
       } else {
