@@ -1425,13 +1425,57 @@ export class DataService {
     teamId: string,
     data: { slide_link?: string; slide_file_name?: string; slide_file_url?: string }
   ): Promise<Team> {
-    const team = db.teams.find((t) => t.id === teamId);
+    await this.syncFromCloud();
+    let team = db.teams.find((t) => t.id === teamId);
+    if (!team && this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          const { data: dbTeam } = await client
+            .from("teams")
+            .select("*")
+            .eq("id", teamId)
+            .maybeSingle();
+          if (dbTeam) {
+            team = dbTeam as Team;
+            if (!db.teams.some((t) => t.id === dbTeam.id)) {
+              db.teams.push(team);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Supabase team lookup error:", err);
+      }
+    }
     if (!team) throw new Error("Team not found");
 
     if (data.slide_link !== undefined) team.slide_link = data.slide_link.trim() || null;
     if (data.slide_file_name !== undefined) team.slide_file_name = data.slide_file_name || null;
     if (data.slide_file_url !== undefined) team.slide_file_url = data.slide_file_url || null;
     team.updated_at = new Date().toISOString();
+
+    if (this.isSupabaseConfigured()) {
+      try {
+        const client = createAdminSupabaseClient();
+        if (client) {
+          const { error: teamErr } = await client
+            .from("teams")
+            .update({
+              slide_link: team.slide_link,
+              slide_file_name: team.slide_file_name,
+              slide_file_url: team.slide_file_url,
+              updated_at: team.updated_at,
+            })
+            .eq("id", team.id);
+          if (teamErr) {
+            console.error("Supabase team slide update error:", teamErr);
+          }
+        }
+      } catch (err) {
+        console.warn("Supabase team slide update error:", err);
+      }
+    }
+
     db.saveToDisk();
 
     return (await this.getTeamById(teamId, true))!;

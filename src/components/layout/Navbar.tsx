@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GraduationCap, KeyRound, BookOpen, Menu, X, Shield, UserPlus } from "lucide-react";
+import { GraduationCap, KeyRound, BookOpen, Menu, X, Shield, UserPlus, Presentation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function Navbar() {
@@ -18,6 +18,7 @@ export function Navbar() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/courses", label: "Courses & Teams" },
+    { href: "/slides/se214?section=H", label: "Slides", icon: Presentation },
     { href: "/register-team", label: "Register Team", icon: UserPlus },
     { href: "/manage", label: "Team Login", icon: KeyRound },
   ];

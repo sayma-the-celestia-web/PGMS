@@ -50,6 +50,10 @@ import {
   ExternalLink,
   Save,
   X,
+  Download,
+  Eye,
+  Presentation,
+  Check,
 } from "lucide-react";
 
 export function ManageClient() {
@@ -239,16 +243,37 @@ export function ManageClient() {
     }
   };
 
-  // Handle Slide File Selection
+  // Handle Slide File Selection (max 15MB, .pdf, .pptx only)
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setActionError(null);
     const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      setSlideFileName(file.name);
+    if (!file) {
+      setSelectedFile(null);
+      return;
     }
+
+    const maxBytes = 15 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      setActionError(`File size (${sizeMb} MB) exceeds the 15 MB limit. Please select a PDF or PPTX file under 15 MB.`);
+      e.target.value = "";
+      setSelectedFile(null);
+      return;
+    }
+
+    const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+    if (![".pdf", ".pptx", ".ppt"].includes(ext)) {
+      setActionError(`Invalid file format "${ext}". Only PDF (.pdf) and PowerPoint (.pptx) presentations are allowed.`);
+      e.target.value = "";
+      setSelectedFile(null);
+      return;
+    }
+
+    setSelectedFile(file);
+    setSlideFileName(file.name);
   };
 
-  // Save Slides (Link and/or File)
+  // Save Slides (Cloudinary file upload and/or link)
   const handleSaveSlides = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!team) return;
@@ -258,20 +283,48 @@ export function ManageClient() {
     setActionSuccess(null);
 
     try {
-      const res = await updateTeamSlideAction(team.id, {
-        slideLink: slideLink.trim() || undefined,
-        slideFileName: selectedFile ? selectedFile.name : slideFileName || undefined,
-        slideFileUrl: selectedFile ? URL.createObjectURL(selectedFile) : undefined,
-      });
+      if (selectedFile) {
+        // Upload to Cloudinary through API route
+        const formData = new FormData();
+        formData.append("teamId", team.id);
+        formData.append("file", selectedFile);
+        if (slideLink.trim()) {
+          formData.append("slideLink", slideLink.trim());
+        }
 
-      if (res.success && res.team) {
-        setTeam(res.team);
-        setActionSuccess("Presentation slides updated successfully!");
+        const res = await fetch("/api/slides/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Failed to upload presentation slides to Cloudinary.");
+        }
+
+        if (data.team) {
+          setTeam(data.team);
+          setSlideFileName(data.fileName || data.team.slide_file_name || "");
+          setSelectedFile(null);
+        }
+        setActionSuccess("Presentation slides uploaded and stored in Cloudinary successfully!");
       } else {
-        setActionError(res.error || "Failed to update slides.");
+        // Only updating slide link
+        const res = await updateTeamSlideAction(team.id, {
+          slideLink: slideLink.trim() || undefined,
+          slideFileName: slideFileName || undefined,
+          slideFileUrl: team.slide_file_url || undefined,
+        });
+
+        if (res.success && res.team) {
+          setTeam(res.team);
+          setActionSuccess("Presentation slides link updated successfully!");
+        } else {
+          setActionError(res.error || "Failed to update slides link.");
+        }
       }
     } catch (err: any) {
-      setActionError(err?.message || "Error updating presentation slides.");
+      setActionError(err?.message || "Error saving presentation slides.");
     } finally {
       setSlidesSaving(false);
     }
@@ -732,22 +785,129 @@ export function ManageClient() {
           {/* SLIDES UPLOAD / LINK CARD */}
           <Card className="border border-slate-200 shadow-sm bg-white">
             <CardHeader className="bg-slate-50 border-b border-slate-100 pb-3">
-              <CardTitle className="text-sm text-diu-navy flex items-center gap-2">
-                <UploadCloud className="w-4 h-4 text-diu-blue" />
-                Presentation Slides
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm text-diu-navy flex items-center gap-2">
+                  <UploadCloud className="w-4 h-4 text-diu-blue" />
+                  Presentation Slides
+                </CardTitle>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-100 text-diu-blue">
+                  Max 15 MB
+                </span>
+              </div>
               <CardDescription className="text-xs">
-                Paste presentation link or upload slide file (.pdf, .pptx, .docx).
+                Upload your team presentation slides (.pdf, .pptx) stored in Cloudinary.
               </CardDescription>
             </CardHeader>
 
             <form onSubmit={handleSaveSlides}>
               <CardContent className="pt-4 space-y-4 text-xs">
-                {/* Option 1: Paste Link */}
+                {/* Current Uploaded Slide File if present */}
+                {team.slide_file_url && (
+                  <div className="p-3 bg-blue-50/70 border border-blue-200/80 rounded-lg space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Presentation className="w-4 h-4 text-diu-blue shrink-0" />
+                        <span className="font-semibold text-slate-800 truncate text-xs">
+                          {team.slide_file_name || "Uploaded Presentation"}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-medium bg-white text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 shrink-0">
+                        Cloudinary CDN
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <a
+                        href={
+                          team.slide_file_name?.toLowerCase().endsWith(".pptx") || team.slide_file_name?.toLowerCase().endsWith(".ppt")
+                            ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(team.slide_file_url)}`
+                            : team.slide_file_url
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-diu-blue hover:text-diu-navy bg-white px-2.5 py-1 rounded border border-slate-200 shadow-xs transition-colors"
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>View Slides</span>
+                      </a>
+                      <a
+                        href={team.slide_file_url}
+                        download={team.slide_file_name || "presentation-slides"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 hover:text-slate-900 bg-white px-2.5 py-1 rounded border border-slate-200 shadow-xs transition-colors"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>Download</span>
+                      </a>
+                    </div>
+
+                    {/* Link to public section slides repository */}
+                    <div className="pt-1 border-t border-blue-200/50">
+                      <Link
+                        href={`/slides/${team.course_offering?.course?.slug || team.course_offering?.course?.code?.toLowerCase() || "se214"}?section=${team.course_offering?.section || "H"}`}
+                        target="_blank"
+                        className="text-[11px] text-diu-blue hover:underline inline-flex items-center gap-1 font-medium"
+                      >
+                        <span>View in Section Slides Repository</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  </div>
+                )}
+
+                {/* Option 1: File Upload to Cloudinary (PDF or PPTX, max 15MB) */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="slideFile" className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-diu-blue" />
+                      Upload Slide File (.pdf / .pptx)
+                    </Label>
+                    <span className="text-[10px] text-slate-500 font-mono">Max 15MB</span>
+                  </div>
+                  <input
+                    id="slideFile"
+                    type="file"
+                    accept=".pdf,.pptx,.ppt,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint"
+                    onChange={handleFileChange}
+                    className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-diu-blue hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-md p-1"
+                  />
+                  {selectedFile ? (
+                    <div className="text-[11px] text-slate-700 bg-emerald-50 p-2 rounded border border-emerald-200 mt-1 flex items-center justify-between">
+                      <span className="truncate">
+                        Selected: <strong>{selectedFile.name}</strong> ({(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setSlideFileName(team.slide_file_name || "");
+                        }}
+                        className="text-slate-400 hover:text-rose-500 ml-2"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-slate-500">
+                      Uploads will be saved directly to Cloudinary storage.
+                    </p>
+                  )}
+                </div>
+
+                <div className="relative flex py-1 items-center">
+                  <div className="flex-grow border-t border-slate-200"></div>
+                  <span className="flex-shrink mx-2 text-[10px] text-slate-400 font-semibold uppercase">
+                    OR
+                  </span>
+                  <div className="flex-grow border-t border-slate-200"></div>
+                </div>
+
+                {/* Option 2: Paste Link */}
                 <div className="space-y-1.5">
                   <Label htmlFor="slideLink" className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
                     <LinkIcon className="w-3.5 h-3.5 text-diu-blue" />
-                    Paste Slide Link
+                    Paste Slide Link (Optional)
                   </Label>
                   <Input
                     id="slideLink"
@@ -764,37 +924,9 @@ export function ManageClient() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-[11px] text-diu-blue hover:underline font-medium mt-1"
                     >
-                      <span>Open current slides</span>
+                      <span>Open presentation link</span>
                       <ExternalLink className="w-3 h-3" />
                     </a>
-                  )}
-                </div>
-
-                <div className="relative flex py-1 items-center">
-                  <div className="flex-grow border-t border-slate-200"></div>
-                  <span className="flex-shrink mx-2 text-[10px] text-slate-400 font-semibold uppercase">
-                    OR
-                  </span>
-                  <div className="flex-grow border-t border-slate-200"></div>
-                </div>
-
-                {/* Option 2: File Upload (PDF, PPTX, DOCX) */}
-                <div className="space-y-1.5">
-                  <Label htmlFor="slideFile" className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-diu-blue" />
-                    Upload File (.pdf / .pptx / .docx)
-                  </Label>
-                  <input
-                    id="slideFile"
-                    type="file"
-                    accept=".pdf,.pptx,.docx,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    onChange={handleFileChange}
-                    className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-diu-blue hover:file:bg-blue-100 cursor-pointer"
-                  />
-                  {(slideFileName || selectedFile) && (
-                    <p className="text-[11px] text-slate-600 bg-slate-50 p-2 rounded border border-slate-200 mt-1">
-                      File: <strong>{selectedFile ? selectedFile.name : slideFileName}</strong>
-                    </p>
                   )}
                 </div>
               </CardContent>
@@ -807,7 +939,13 @@ export function ManageClient() {
                   className="w-full text-xs font-semibold gap-1.5"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  {slidesSaving ? "Saving Slides..." : "Save / Update Slides"}
+                  {slidesSaving
+                    ? selectedFile
+                      ? "Uploading to Cloudinary..."
+                      : "Saving Slides..."
+                    : selectedFile
+                    ? "Upload Slides (Cloudinary)"
+                    : "Save / Update Slides"}
                 </Button>
               </CardFooter>
             </form>

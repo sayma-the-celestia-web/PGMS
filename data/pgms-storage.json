@@ -94,7 +94,7 @@
       "student_id": "252-35-582",
       "normalized_student_id": "252-35-582",
       "created_at": "2026-11-21T15:33:58.897+00:00",
-      "updated_at": "2026-11-21T20:09:15.735+00:00"
+      "updated_at": "2026-11-21T20:20:59.319+00:00"
     },
     {
       "id": "stu-1795277210467-e2w77",
@@ -383,6 +383,86 @@
       "normalized_student_id": "252-35-602",
       "created_at": "2026-11-21T19:16:17.104Z",
       "updated_at": "2026-11-21T19:16:17.104Z"
+    },
+    {
+      "id": "stu-1795319557705-oc9tb",
+      "full_name": "Sabbir Ahmed",
+      "student_id": "252-35-296",
+      "normalized_student_id": "252-35-296",
+      "created_at": "2026-11-22T03:52:37.705+00:00",
+      "updated_at": "2026-11-22T03:52:37.705+00:00"
+    },
+    {
+      "id": "stu-1795319557705-jqobl",
+      "full_name": "Omor Faruk Shariar",
+      "student_id": "252-35-381",
+      "normalized_student_id": "252-35-381",
+      "created_at": "2026-11-22T03:52:37.705+00:00",
+      "updated_at": "2026-11-22T03:52:37.705+00:00"
+    },
+    {
+      "id": "stu-1795319557705-zoict",
+      "full_name": "Md Tahmid Uddin",
+      "student_id": "252-35-228",
+      "normalized_student_id": "252-35-228",
+      "created_at": "2026-11-22T03:52:37.705+00:00",
+      "updated_at": "2026-11-22T03:52:37.705+00:00"
+    },
+    {
+      "id": "stu-1795319557705-e681t",
+      "full_name": "Marzia Fardous",
+      "student_id": "252-35-198",
+      "normalized_student_id": "252-35-198",
+      "created_at": "2026-11-22T03:52:37.705+00:00",
+      "updated_at": "2026-11-22T03:52:37.705+00:00"
+    },
+    {
+      "id": "stu-1795319557705-fniej",
+      "full_name": "Mehedi",
+      "student_id": "252-35-233",
+      "normalized_student_id": "252-35-233",
+      "created_at": "2026-11-22T03:52:37.705+00:00",
+      "updated_at": "2026-11-22T03:52:37.705+00:00"
+    },
+    {
+      "id": "stu-1795319906782-f49j8",
+      "full_name": "Shaik Rezwan Ahmmed Rafi",
+      "student_id": "252-35-245",
+      "normalized_student_id": "252-35-245",
+      "created_at": "2026-11-22T03:58:26.782+00:00",
+      "updated_at": "2026-11-22T03:58:26.782+00:00"
+    },
+    {
+      "id": "stu-1795319906782-jy6t6",
+      "full_name": "Saima",
+      "student_id": "252-35-253",
+      "normalized_student_id": "252-35-253",
+      "created_at": "2026-11-22T03:58:26.782+00:00",
+      "updated_at": "2026-11-22T03:58:26.782+00:00"
+    },
+    {
+      "id": "stu-1795319906782-g033t",
+      "full_name": "Sadia",
+      "student_id": "252-35-268",
+      "normalized_student_id": "252-35-268",
+      "created_at": "2026-11-22T03:58:26.782+00:00",
+      "updated_at": "2026-11-22T03:58:26.782+00:00"
+    },
+    {
+      "id": "stu-1795319906782-8ln0d",
+      "full_name": "Antor",
+      "student_id": "252-35-373",
+      "normalized_student_id": "252-35-373",
+      "created_at": "2026-11-22T03:58:26.782+00:00",
+      "updated_at": "2026-11-22T03:58:26.782+00:00"
+    },
+    {
+      "id": "stu-1795319906782-3dhb0",
+      "full_name": "Mim",
+      "student_id": "252-35-490",
+      "normalized_student_id": "252-35-490",
+      "created_at": "2026-11-22T03:58:26.782+00:00",
+      "updated_at": "2026-11-22T03:58:26.782+00:00"
     }
   ],
   "teams": [
@@ -399,7 +479,7 @@
       "slide_file_name": "Computer Fundamentals - Final - Spring 25.pdf",
       "slide_file_url": "blob:https://diu-team.unleft.space/1e08fcf6-fbe8-4bc8-a94f-92d215de4778",
       "created_at": "2026-11-21T15:33:58.897+00:00",
-      "updated_at": "2026-11-21T20:09:15.735+00:00"
+      "updated_at": "2026-11-21T20:20:59.319+00:00"
     },
     {
       "id": "team-1795278047001-8dqde",
@@ -469,12 +549,12 @@
       "capacity": 5,
       "topic": null,
       "leader_membership_id": "mem-1795280835990-uo2ex",
-      "status": "FULL",
+      "status": "OPEN",
       "slide_link": null,
       "slide_file_name": null,
       "slide_file_url": null,
       "created_at": "2026-11-21T17:07:15.99+00:00",
-      "updated_at": "2026-11-21T17:07:15.991+00:00"
+      "updated_at": "2026-11-21T20:21:43.631+00:00"
     },
     {
       "id": "team-1795281501722-c9pel",
@@ -502,6 +582,36 @@
       "status": "FULL",
       "created_at": "2026-11-21T19:16:17.105Z",
       "updated_at": "2026-11-21T19:16:17.105Z"
+    },
+    {
+      "id": "team-1795319557705-syk2l",
+      "course_offering_id": "offering-se214-h",
+      "presentation_number": 9,
+      "team_name": "Team Vibe",
+      "capacity": 5,
+      "topic": null,
+      "leader_membership_id": "mem-1795319557705-wmqxg",
+      "status": "FULL",
+      "slide_link": null,
+      "slide_file_name": null,
+      "slide_file_url": null,
+      "created_at": "2026-11-22T03:52:37.705+00:00",
+      "updated_at": "2026-11-22T03:52:37.705+00:00"
+    },
+    {
+      "id": "team-1795319906782-9wu9a",
+      "course_offering_id": "offering-se214-h",
+      "presentation_number": 10,
+      "team_name": "NovaX",
+      "capacity": 5,
+      "topic": null,
+      "leader_membership_id": "mem-1795319906782-1akue",
+      "status": "FULL",
+      "slide_link": null,
+      "slide_file_name": null,
+      "slide_file_url": null,
+      "created_at": "2026-11-22T03:58:26.782+00:00",
+      "updated_at": "2026-11-22T03:58:26.782+00:00"
     }
   ],
   "memberships": [
@@ -786,16 +896,6 @@
       "updated_at": "2026-11-21T17:07:15.991+00:00"
     },
     {
-      "id": "mem-1795280835991-m8dtz",
-      "team_id": "team-1795280835990-y2jcc",
-      "student_id": "stu-1795280835990-qxfa2",
-      "course_offering_id": "offering-se214-h",
-      "role": "MEMBER",
-      "status": "ACTIVE",
-      "joined_at": "2026-11-21T17:07:15.991+00:00",
-      "updated_at": "2026-11-21T17:07:15.991+00:00"
-    },
-    {
       "id": "mem-1795281501722-0wkkf",
       "team_id": "team-1795281501722-c9pel",
       "student_id": "stu-1795281501722-veeuw",
@@ -896,14 +996,114 @@
       "updated_at": "2026-11-21T19:16:17.105Z"
     },
     {
-      "id": "mem-1795291755735-nd480",
+      "id": "mem-1795292459319-9azuu",
       "team_id": "team-1795275238897-34x4n",
       "student_id": "stu-1795275238897-ozen4",
       "course_offering_id": "offering-se214-h",
       "role": "MEMBER",
       "status": "ACTIVE",
-      "joined_at": "2026-11-21T20:09:15.735+00:00",
-      "updated_at": "2026-11-21T20:09:15.735+00:00"
+      "joined_at": "2026-11-21T20:20:59.319+00:00",
+      "updated_at": "2026-11-21T20:20:59.319+00:00"
+    },
+    {
+      "id": "mem-1795319557705-wmqxg",
+      "team_id": "team-1795319557705-syk2l",
+      "student_id": "stu-1795319557705-oc9tb",
+      "course_offering_id": "offering-se214-h",
+      "role": "LEADER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-22T03:52:37.705+00:00",
+      "updated_at": "2026-11-22T03:52:37.705+00:00"
+    },
+    {
+      "id": "mem-1795319557705-hrrt2",
+      "team_id": "team-1795319557705-syk2l",
+      "student_id": "stu-1795319557705-jqobl",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-22T03:52:37.705+00:00",
+      "updated_at": "2026-11-22T03:52:37.705+00:00"
+    },
+    {
+      "id": "mem-1795319557705-75crg",
+      "team_id": "team-1795319557705-syk2l",
+      "student_id": "stu-1795319557705-zoict",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-22T03:52:37.705+00:00",
+      "updated_at": "2026-11-22T03:52:37.705+00:00"
+    },
+    {
+      "id": "mem-1795319557705-58ss3",
+      "team_id": "team-1795319557705-syk2l",
+      "student_id": "stu-1795319557705-e681t",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-22T03:52:37.705+00:00",
+      "updated_at": "2026-11-22T03:52:37.705+00:00"
+    },
+    {
+      "id": "mem-1795319557705-5eacg",
+      "team_id": "team-1795319557705-syk2l",
+      "student_id": "stu-1795319557705-fniej",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-22T03:52:37.705+00:00",
+      "updated_at": "2026-11-22T03:52:37.705+00:00"
+    },
+    {
+      "id": "mem-1795319906782-1akue",
+      "team_id": "team-1795319906782-9wu9a",
+      "student_id": "stu-1795319906782-f49j8",
+      "course_offering_id": "offering-se214-h",
+      "role": "LEADER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-22T03:58:26.782+00:00",
+      "updated_at": "2026-11-22T03:58:26.782+00:00"
+    },
+    {
+      "id": "mem-1795319906782-mtlhx",
+      "team_id": "team-1795319906782-9wu9a",
+      "student_id": "stu-1795319906782-jy6t6",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-22T03:58:26.782+00:00",
+      "updated_at": "2026-11-22T03:58:26.782+00:00"
+    },
+    {
+      "id": "mem-1795319906782-9613w",
+      "team_id": "team-1795319906782-9wu9a",
+      "student_id": "stu-1795319906782-g033t",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-22T03:58:26.782+00:00",
+      "updated_at": "2026-11-22T03:58:26.782+00:00"
+    },
+    {
+      "id": "mem-1795319906782-t577w",
+      "team_id": "team-1795319906782-9wu9a",
+      "student_id": "stu-1795319906782-8ln0d",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-22T03:58:26.782+00:00",
+      "updated_at": "2026-11-22T03:58:26.782+00:00"
+    },
+    {
+      "id": "mem-1795319906782-x2ter",
+      "team_id": "team-1795319906782-9wu9a",
+      "student_id": "stu-1795319906782-3dhb0",
+      "course_offering_id": "offering-se214-h",
+      "role": "MEMBER",
+      "status": "ACTIVE",
+      "joined_at": "2026-11-22T03:58:26.782+00:00",
+      "updated_at": "2026-11-22T03:58:26.782+00:00"
     }
   ],
   "credentials": [
@@ -994,6 +1194,28 @@
       "expires_at": null,
       "revoked_at": null,
       "last_used_at": null
+    },
+    {
+      "id": "cred-tm-1795319557706",
+      "credential_type": "TEAM_MANAGEMENT",
+      "team_id": "team-1795319557705-syk2l",
+      "membership_id": null,
+      "token_hash": "1e25c15d76ff2c9d26725915455e1e7ce0f56ea5d0f570121fb12a80dd980c4b",
+      "created_at": "2026-11-22T03:52:37.706Z",
+      "expires_at": null,
+      "revoked_at": null,
+      "last_used_at": null
+    },
+    {
+      "id": "cred-tm-1795319906782",
+      "credential_type": "TEAM_MANAGEMENT",
+      "team_id": "team-1795319906782-9wu9a",
+      "membership_id": null,
+      "token_hash": "40cb8770dcea98fc4d46e75c77d75b0111fd8c4e64a6d65c2bb056eb61dc03f0",
+      "created_at": "2026-11-22T03:58:26.782Z",
+      "expires_at": null,
+      "revoked_at": null,
+      "last_used_at": null
     }
   ],
   "joinRequests": [
@@ -1006,9 +1228,47 @@
       "status": "ACCEPTED",
       "created_at": "2026-11-21T16:01:30.214Z",
       "updated_at": "2026-11-21T16:06:50.467Z"
+    },
+    {
+      "id": "req-1795320765402-i8oxn",
+      "team_id": "team-1795280835990-y2jcc",
+      "course_offering_id": "offering-se214-h",
+      "student_name": "Tapash Sarker",
+      "student_id": "252-35-285",
+      "status": "PENDING",
+      "created_at": "2026-11-22T04:12:45.402Z",
+      "updated_at": "2026-11-22T04:12:45.402Z"
     }
   ],
   "auditLogs": [
+    {
+      "id": "log-1795292505632-228",
+      "actor_admin_id": null,
+      "actor_email": "superadmin@daffodilvarsity.edu.bd",
+      "action": "ADMIN_REMOVE_MEMBER",
+      "target_type": "MEMBERSHIP",
+      "target_id": "mem-1795280835991-m8dtz",
+      "details": {
+        "reason": "Removed by Team Leader",
+        "team_id": "team-1795280835990-y2jcc",
+        "student_id": "stu-1795280835990-qxfa2"
+      },
+      "created_at": "2026-11-21T20:21:45.632Z"
+    },
+    {
+      "id": "log-1795292383334-597",
+      "actor_admin_id": null,
+      "actor_email": "superadmin@daffodilvarsity.edu.bd",
+      "action": "ADMIN_REMOVE_MEMBER",
+      "target_type": "MEMBERSHIP",
+      "target_id": "mem-1795291755735-nd480",
+      "details": {
+        "reason": "Removed by Team Leader",
+        "team_id": "team-1795275238897-34x4n",
+        "student_id": "stu-1795275238897-ozen4"
+      },
+      "created_at": "2026-11-21T20:19:43.334Z"
+    },
     {
       "id": "log-1795291757095-987",
       "actor_admin_id": null,
